@@ -1,0 +1,34 @@
+on:
+  pull_request:
+    paths-ignore:
+      - "**.md"
+      - "LICENSE"
+      - ".gitignore"
+  push:
+    branches:
+      - "main"
+    paths-ignore:
+      - "**.md"
+      - "LICENSE"
+      - ".gitignore"
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    name: Run clippy
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/setup
+      - uses: giraffate/clippy-action@v1
+        with:
+          reporter: 'github-pr-review'
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          filter_mode: nofilter
+  test:
+    runs-on: ubuntu-latest
+    name: Run test
+    steps:
+      - uses: actions/checkout@v3
+      - uses: ./.github/actions/setup
+      - name: Run test
+        run: cargo test --all -- --nocapture
