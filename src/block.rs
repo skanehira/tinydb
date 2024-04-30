@@ -1,6 +1,6 @@
 use std::hash::{DefaultHasher, Hasher as _};
 
-#[derive(Debug, Eq)]
+#[derive(Debug, Clone, Eq)]
 pub struct BlockId {
     pub filename: String,
     pub num: u64,

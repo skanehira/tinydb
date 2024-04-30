@@ -16,7 +16,7 @@ pub struct FileManager {
 
 impl FileManager {
     pub fn new(db_dir: impl Into<PathBuf>, block_size: u64) -> Result<Self> {
-        let db_dir: PathBuf = db_dir.into();
+        let db_dir = db_dir.into();
         let is_new = !db_dir.exists();
         if is_new {
             create_dir_all(&db_dir)?;
@@ -88,8 +88,8 @@ impl FileManager {
         }
     }
 
-    pub fn append(&mut self, filename: &str) -> Result<BlockId> {
-        let block = BlockId::new(filename.to_string(), self.length(filename)?);
+    pub fn append_block(&mut self, filename: &str) -> Result<BlockId> {
+        let block = BlockId::new(filename.to_string(), self.block_count(filename)?);
         let offset = block.num * self.block_size;
         let bytes = vec![0; self.block_size as usize];
         let file = self.get_file_mut(filename)?;
@@ -99,7 +99,7 @@ impl FileManager {
     }
 
     // length returns block count
-    pub fn length(&mut self, filename: &str) -> Result<u64> {
+    pub fn block_count(&mut self, filename: &str) -> Result<u64> {
         let file = self.get_file(filename)?;
         Ok(file.metadata()?.len() / self.block_size)
     }
@@ -151,7 +151,7 @@ mod tests {
         let tempdir = tempdir().unwrap();
         let path = tempdir.as_ref();
         let mut file_manager = FileManager::new(path, 32).unwrap();
-        let block = file_manager.append("test").unwrap();
+        let block = file_manager.append_block("test").unwrap();
         assert_eq!(block.num, 0);
         assert_eq!(block.filename, "test");
         let file = file_manager.get_file(&block.filename).unwrap();
@@ -163,10 +163,10 @@ mod tests {
         let tempdir = tempdir().unwrap();
         let path = tempdir.as_ref();
         let mut file_manager = FileManager::new(path, 32).unwrap();
-        let block = file_manager.append("test").unwrap();
+        let block = file_manager.append_block("test").unwrap();
         assert_eq!(block.num, 0);
         assert_eq!(block.filename, "test");
-        let block = file_manager.append("test").unwrap();
+        let block = file_manager.append_block("test").unwrap();
         assert_eq!(block.num, 1);
         assert_eq!(block.filename, "test");
         let file = file_manager.get_file(&block.filename).unwrap();
@@ -179,7 +179,7 @@ mod tests {
         let tempdir = tempdir().unwrap();
         let path = tempdir.as_ref();
         let mut file_manager = FileManager::new(path, 32).unwrap();
-        let block = file_manager.append("test").unwrap();
+        let block = file_manager.append_block("test").unwrap();
         let mut page = Page::new(file_manager.block_size);
         page.set_string(0, "hello");
         page.set_string(10, "world");

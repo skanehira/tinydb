@@ -1,31 +1,54 @@
-use crate::buffer::Buffer;
 use anyhow::Result;
+use std::{
+    io::{Cursor, Read, Write},
+    mem::size_of,
+};
+
+const I32_SIZE: usize = size_of::<i32>();
 
 pub struct Page {
-    buffer: Buffer,
+    buffer: Cursor<Vec<u8>>,
+}
+
+impl From<Vec<u8>> for Page {
+    fn from(value: Vec<u8>) -> Self {
+        Self {
+            buffer: Cursor::new(value),
+        }
+    }
 }
 
 impl Page {
     pub fn new(block_size: u64) -> Page {
         Page {
-            buffer: Buffer::new(block_size as usize),
+            buffer: Cursor::new(vec![0; block_size as usize]),
         }
     }
 
     pub fn get_int(&mut self, offset: usize) -> i32 {
-        self.buffer.get_int(Some(offset))
+        self.buffer.set_position(offset as u64);
+        let mut bytes = [0; I32_SIZE];
+        self.buffer.read_exact(&mut bytes).unwrap();
+        i32::from_le_bytes(bytes)
     }
 
     pub fn set_int(&mut self, offset: usize, value: i32) {
-        self.buffer.put_int(Some(offset), value);
+        self.buffer.set_position(offset as u64);
+        self.buffer.write_all(&value.to_le_bytes()).unwrap();
     }
 
-    pub fn get_bytes(&mut self, offset: usize) -> &[u8] {
-        self.buffer.get_bytes(offset)
+    pub fn get_bytes(&mut self, offset: usize) -> Vec<u8> {
+        let length = self.get_int(offset) as usize;
+        let mut bytes = vec![0; length];
+        self.buffer.read_exact(&mut bytes).unwrap();
+        bytes
     }
 
-    pub fn set_bytes(&mut self, offset: usize, value: &[u8]) {
-        self.buffer.set_bytes(offset, value);
+    pub fn set_bytes(&mut self, offset: usize, bytes: &[u8]) {
+        self.buffer.set_position(offset as u64);
+        let length = bytes.len() as i32;
+        self.set_int(offset, length);
+        self.buffer.write_all(bytes).unwrap();
     }
 
     pub fn get_string(&mut self, offset: usize) -> Result<String> {
@@ -38,17 +61,17 @@ impl Page {
     }
 
     pub fn max_length(&mut self, str_len: usize) -> usize {
-        4 + str_len
+        size_of::<u32>() + (str_len * size_of::<u8>())
     }
 
     pub fn contents(&mut self) -> &[u8] {
-        self.buffer.set_pos(0);
-        self.buffer.as_ref()
+        self.buffer.set_position(0);
+        self.buffer.get_ref()
     }
 
     pub fn contents_mut(&mut self) -> &mut [u8] {
-        self.buffer.set_pos(0);
-        self.buffer.as_mut()
+        self.buffer.set_position(0);
+        self.buffer.get_mut()
     }
 }
 
@@ -73,7 +96,7 @@ mod tests {
     fn should_can_get_contents() {
         let mut page = Page::new(10);
         page.set_string(0, "hello");
-        assert_eq!(page.contents(), &[0, 0, 0, 5, 104, 101, 108, 108, 111, 0]);
-        assert_eq!(page.buffer.pos(), 0);
+        assert_eq!(page.contents(), &[5, 0, 0, 0, 104, 101, 108, 108, 111, 0]);
+        assert_eq!(page.buffer.position(), 0);
     }
 }
