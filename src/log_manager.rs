@@ -1,5 +1,6 @@
 use crate::{block::BlockId, file_manager::FileManager, log_iter::LogIterator, page::Page};
 use anyhow::Result;
+use std::sync::{Arc, Mutex};
 
 /// LogManager is responsible for managing the log records
 /// in the log file. The log file is a sequence of blocks
@@ -18,7 +19,7 @@ use anyhow::Result;
 /// ```
 #[derive(Default)]
 pub struct LogManager {
-    file_manager: FileManager,
+    file_manager: Arc<Mutex<FileManager>>,
     log_file: String,
     log_page: Page,
     current_block: BlockId,
@@ -28,22 +29,23 @@ pub struct LogManager {
 }
 
 impl LogManager {
-    pub fn new(mut file_manager: FileManager, log_file: String) -> Result<Self> {
-        let mut log_page = Page::new(file_manager.block_size);
-        let block_count = file_manager.block_count(&log_file)?;
+    pub fn new(file_manager: Arc<Mutex<FileManager>>, log_file: String) -> Result<Self> {
+        let mut fm = file_manager.lock().unwrap();
+        let mut log_page = Page::new(fm.block_size);
+        let block_count = fm.block_count(&log_file)?;
         // if block_count is 0, means that the log file is empty
         let current_block = if block_count == 0 {
-            Self::append_new_block(&mut file_manager, &mut log_page, &log_file)?
+            Self::append_new_block(&mut fm, &mut log_page, &log_file)?
         } else {
             // if block_count is not 0, read the last block of the log file
             let block = BlockId::new(log_file.clone(), block_count - 1);
 
-            file_manager.read(&block, &mut log_page)?;
+            fm.read(&block, &mut log_page)?;
             block
         };
 
         Ok(Self {
-            file_manager,
+            file_manager: file_manager.clone(),
             log_file: log_file.clone(),
             log_page,
             current_block,
@@ -54,7 +56,7 @@ impl LogManager {
 
     pub fn iter(&mut self) -> LogIterator {
         self.inner_flush().unwrap();
-        LogIterator::new(&mut self.file_manager, self.current_block.clone())
+        LogIterator::new(self.file_manager.clone(), self.current_block.clone())
     }
 
     // appends a new log record to the log page or flush the log page if the log record does not fit
@@ -69,8 +71,11 @@ impl LogManager {
         // if the log record does not fit in the current block, flush the log page
         if boundary - bytes_needed < 4 {
             self.inner_flush()?;
-            self.current_block =
-                Self::append_new_block(&mut self.file_manager, &mut self.log_page, &self.log_file)?;
+            self.current_block = Self::append_new_block(
+                &mut self.file_manager.lock().unwrap(),
+                &mut self.log_page,
+                &self.log_file,
+            )?;
             boundary = self.log_page.get_int(0);
         }
         // record_pos is the position of the log record in the log page
@@ -94,6 +99,8 @@ impl LogManager {
     // inner_flush saves the log record to the log file
     fn inner_flush(&mut self) -> Result<()> {
         self.file_manager
+            .lock()
+            .unwrap()
             .write(&self.current_block, &mut self.log_page)?;
         self.last_saved_lsn = self.latest_lsn;
         Ok(())
@@ -121,7 +128,7 @@ mod tests {
     #[test]
     fn should_can_new_log_manager() {
         let tempdir = tempfile::tempdir().unwrap();
-        let file_manager = FileManager::new(tempdir.path(), 32).unwrap();
+        let file_manager = Arc::new(Mutex::new(FileManager::new(tempdir.path(), 32).unwrap()));
         let mut log_manager = LogManager::new(file_manager, "log".to_string()).unwrap();
         assert_eq!(
             log_manager.current_block,
@@ -137,7 +144,9 @@ mod tests {
         let block_size = 32;
         let record = b"hello";
         let boundary = (block_size - record.len() - 4) as i32;
-        let file_manager = FileManager::new(tempdir.path(), block_size as u64).unwrap();
+        let file_manager = Arc::new(Mutex::new(
+            FileManager::new(tempdir.path(), block_size as u64).unwrap(),
+        ));
         let mut log_manager = LogManager::new(file_manager, "log".to_string()).unwrap();
         let lsn = log_manager.append(record).unwrap();
         assert_eq!(lsn, 1);
@@ -156,7 +165,9 @@ mod tests {
         let block_size = 32;
         let record = b"hello";
         let record2 = b"world";
-        let file_manager = FileManager::new(tempdir.path(), block_size as u64).unwrap();
+        let file_manager = Arc::new(Mutex::new(
+            FileManager::new(tempdir.path(), block_size as u64).unwrap(),
+        ));
         let mut log_manager = LogManager::new(file_manager, "log".to_string()).unwrap();
         let lsn = log_manager.append(record).unwrap();
         assert_eq!(lsn, 1);
@@ -177,7 +188,9 @@ mod tests {
         let tempdir = tempfile::tempdir().unwrap();
         let block_size = 20;
         let record = b"hello";
-        let file_manager = FileManager::new(tempdir.path(), block_size as u64).unwrap();
+        let file_manager = Arc::new(Mutex::new(
+            FileManager::new(tempdir.path(), block_size as u64).unwrap(),
+        ));
         let mut log_manager = LogManager::new(file_manager, "log".to_string()).unwrap();
         log_manager.append(record).unwrap();
         let data = std::fs::read(tempdir.path().join("log")).unwrap();
@@ -200,7 +213,9 @@ mod tests {
         let block_size = 32;
         let record = b"hello";
         let record2 = b"world";
-        let file_manager = FileManager::new(tempdir.path(), block_size as u64).unwrap();
+        let file_manager = Arc::new(Mutex::new(
+            FileManager::new(tempdir.path(), block_size as u64).unwrap(),
+        ));
         let mut log_manager = LogManager::new(file_manager, "log".to_string()).unwrap();
         log_manager.append(record).unwrap();
         log_manager.append(record2).unwrap();

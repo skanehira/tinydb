@@ -43,17 +43,17 @@ impl FileManager {
     // TODO: thread safe
     pub fn read(&mut self, block: &BlockId, page: &mut Page) -> Result<()> {
         let block_size = self.block_size;
-        let file = self.get_file_mut(&block.filename)?;
+        let mut file = self.get_file(&block.filename)?;
         let offset = block.num * block_size;
         file.seek(std::io::SeekFrom::Start(offset))?;
-        file.read_exact(page.contents_mut())?;
+        _ = file.read(page.contents_mut())?;
         Ok(())
     }
 
     // TODO: thread safe
     pub fn write(&mut self, block: &BlockId, page: &mut Page) -> Result<()> {
         let block_size = self.block_size;
-        let file = self.get_file_mut(&block.filename)?;
+        let mut file = self.get_file(&block.filename)?;
         let offset = block.num * block_size;
         file.seek(std::io::SeekFrom::Start(offset))?;
         file.write_all(page.contents())?;
@@ -77,23 +77,11 @@ impl FileManager {
         }
     }
 
-    pub fn get_file_mut<'a>(&'a mut self, filename: &'a str) -> Result<&'a mut File> {
-        if self.open_files.contains_key(filename) {
-            self.open_files
-                .get_mut(filename)
-                .ok_or(anyhow::anyhow!("cannot open file {}", filename))
-        } else {
-            let file = File::open(self.db_dir.join(filename))?;
-            self.open_files.insert(filename.to_string(), file);
-            Ok(self.open_files.get_mut(filename).unwrap())
-        }
-    }
-
     pub fn append_block(&mut self, filename: &str) -> Result<BlockId> {
         let block = BlockId::new(filename.to_string(), self.block_count(filename)?);
         let offset = block.num * self.block_size;
         let bytes = vec![0; self.block_size as usize];
-        let file = self.get_file_mut(filename)?;
+        let mut file = self.get_file(filename)?;
         file.seek(std::io::SeekFrom::Start(offset))?;
         file.write_all(&bytes)?;
         Ok(block)
