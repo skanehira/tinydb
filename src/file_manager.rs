@@ -7,6 +7,7 @@ use std::{
     path::PathBuf,
 };
 
+#[derive(Default)]
 pub struct FileManager {
     pub db_dir: PathBuf,
     pub block_size: u64,

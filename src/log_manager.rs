@@ -16,6 +16,7 @@ use anyhow::Result;
 ///                 ┗━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┛
 ///                                  record
 /// ```
+#[derive(Default)]
 pub struct LogManager {
     file_manager: FileManager,
     log_file: String,

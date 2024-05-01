@@ -6,6 +6,7 @@ use std::{
 
 const I32_SIZE: usize = size_of::<i32>();
 
+#[derive(Default)]
 pub struct Page {
     buffer: Cursor<Vec<u8>>,
 }
