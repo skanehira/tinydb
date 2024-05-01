@@ -60,7 +60,7 @@ impl Page {
         self.set_bytes(offset, value.as_bytes());
     }
 
-    pub fn max_length(&mut self, str_len: usize) -> usize {
+    pub fn max_length(str_len: usize) -> usize {
         size_of::<u32>() + (str_len * size_of::<u8>())
     }
 
@@ -72,6 +72,13 @@ impl Page {
     pub fn contents_mut(&mut self) -> &mut [u8] {
         self.buffer.set_position(0);
         self.buffer.get_mut()
+    }
+
+    pub fn read_bytes(&mut self, offset: usize, len: usize) -> Result<Vec<u8>> {
+        self.buffer.set_position(offset as u64);
+        let mut bytes = vec![0; len];
+        self.buffer.read_exact(&mut bytes)?;
+        Ok(bytes)
     }
 }
 

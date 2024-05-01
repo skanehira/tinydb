@@ -210,4 +210,27 @@ mod tests {
         assert_eq!(record, b"hello");
         assert_eq!(iter.next(), None);
     }
+
+    // FIXME: this should passed?
+    //#[test]
+    //fn should_can_iter_records_in_multiple_block() {
+    //    let tempdir = tempfile::tempdir().unwrap();
+    //    let block_size = 9;
+    //    let mut file_manager = FileManager::new(tempdir.path(), block_size).unwrap();
+    //    let block1 = file_manager.append_block("log").unwrap();
+    //    let block2 = file_manager.append_block("log").unwrap();
+
+    //    let mut page = Page::new(block_size);
+    //    page.set_string(0, "hello");
+    //    file_manager.write(&block1, &mut page).unwrap();
+
+    //    let mut page = Page::new(block_size);
+    //    page.set_string(0, "world");
+    //    file_manager.write(&block2, &mut page).unwrap();
+
+    //    let mut iter = LogIterator::new(&mut file_manager, block2);
+    //    assert_eq!(iter.next().unwrap(), b"world");
+    //    assert_eq!(iter.next().unwrap(), b"hello");
+    //    assert_eq!(iter.next(), None);
+    //}
 }
