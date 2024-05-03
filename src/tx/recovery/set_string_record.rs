@@ -1,12 +1,12 @@
 use crate::{
-    block::BlockId,
-    log_manager::LogManager,
-    log_record::{LogRecord, LogRecordType},
-    page::Page,
+    file::{block::BlockId, page::Page},
+    log::log_manager::LogManager,
     transaction::Transaction,
     I32_SIZE,
 };
 use anyhow::Result;
+
+use super::record::{LogRecord, LogRecordType};
 
 pub struct SetStringRecord {
     tx_num: i32,

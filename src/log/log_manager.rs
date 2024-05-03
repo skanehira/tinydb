@@ -1,6 +1,9 @@
-use crate::{block::BlockId, file_manager::FileManager, log_iter::LogIterator, page::Page};
 use anyhow::Result;
 use std::sync::{Arc, Mutex};
+
+use crate::file::{block::BlockId, file_manager::FileManager, page::Page};
+
+use super::log_iter::LogIterator;
 
 /// LogManager is responsible for managing the log records
 /// in the log file. The log file is a sequence of blocks
@@ -8,14 +11,14 @@ use std::sync::{Arc, Mutex};
 ///
 /// ```text
 ///                         block                                     blocks
-/// ┏━━━━━━━━━━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━┻━━━━━━━━━━━┓
+/// ┏━━━━━━━━━━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━┻━━━━━━━━━━━┓
 /// ┌────┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┐
 /// │ 14 │ 0 │ 0 │ 0 │ 6 │ 0 │ 0 │ 0 │ h │ e │ l │ l │ o │ 0 │...│...│...│...│...│...│
 /// └────┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┘
-/// ┗━━━━━━━┳━━━━━━━┻━━━━━━━┳━━━━━━━┻━━━━━━━━━━━┳━━━━━━━━━━━┛
+/// ┗━━━━━━━┳━━━━━━━━┻━━━━━━━┳━━━━━━━┻━━━━━━━━━━━┳━━━━━━━━━━━┛
 ///  record boundary    record size        record data
-///                 ┗━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┛
-///                                  record
+///                  ┗━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┛
+///                                    record
 /// ```
 #[derive(Default)]
 pub struct LogManager {

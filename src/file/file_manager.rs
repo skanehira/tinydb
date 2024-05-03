@@ -1,4 +1,4 @@
-use crate::{block::BlockId, page::Page};
+use super::{block::BlockId, page::Page};
 use anyhow::Result;
 use std::{
     collections::HashMap,

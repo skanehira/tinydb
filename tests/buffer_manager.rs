@@ -1,6 +1,6 @@
 use anyhow::Result;
 use tempfile::tempdir;
-use tinydb::{block::BlockId, server::db::TinyDB};
+use tinydb::{file::block::BlockId, server::db::TinyDB};
 
 #[test]
 fn buffer_manager_test() -> Result<()> {

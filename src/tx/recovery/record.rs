@@ -1,6 +1,8 @@
 use anyhow::Result;
 
-use crate::{log_record_set_string::SetStringRecord, page::Page, transaction::Transaction};
+use crate::{file::page::Page, transaction::Transaction};
+
+use super::set_string_record::SetStringRecord;
 
 pub enum LogRecordType {
     Checkpoint = 0,

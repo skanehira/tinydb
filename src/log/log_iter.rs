@@ -1,8 +1,9 @@
-use crate::{block::BlockId, file_manager::FileManager, page::Page};
 use std::{
     mem::size_of,
     sync::{Arc, Mutex},
 };
+
+use crate::file::{block::BlockId, file_manager::FileManager, page::Page};
 
 pub struct LogIterator {
     file_manager: Arc<Mutex<FileManager>>,

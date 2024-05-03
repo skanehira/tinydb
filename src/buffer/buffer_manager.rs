@@ -1,9 +1,14 @@
-use crate::{block::BlockId, buffer::Buffer, file_manager::FileManager, log_manager::LogManager};
+use crate::{
+    file::{block::BlockId, file_manager::FileManager},
+    log::log_manager::LogManager,
+};
 use anyhow::{bail, Result};
 use std::{
     sync::{Arc, Mutex, OnceLock},
     time::SystemTime,
 };
+
+use super::buffer::Buffer;
 
 static MAX_TIME: OnceLock<u64> = OnceLock::new();
 

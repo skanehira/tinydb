@@ -1,6 +1,6 @@
 use anyhow::Result;
 use tempfile::tempdir;
-use tinydb::{log_manager::LogManager, page::Page, server::db::TinyDB};
+use tinydb::{file::page::Page, log::log_manager::LogManager, server::db::TinyDB};
 
 #[test]
 fn log_test() -> Result<()> {

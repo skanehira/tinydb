@@ -1,6 +1,9 @@
 use std::sync::{Arc, Mutex};
 
-use crate::{block::BlockId, file_manager::FileManager, log_manager::LogManager, page::Page};
+use crate::{
+    file::{block::BlockId, file_manager::FileManager, page::Page},
+    log::log_manager::LogManager,
+};
 
 #[derive(Default)]
 pub struct Buffer {
