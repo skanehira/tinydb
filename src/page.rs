@@ -4,7 +4,7 @@ use std::{
     mem::size_of,
 };
 
-const I32_SIZE: usize = size_of::<i32>();
+use crate::I32_SIZE;
 
 #[derive(Default)]
 pub struct Page {
