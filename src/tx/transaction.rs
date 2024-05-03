@@ -10,6 +10,10 @@ impl Transaction {
         todo!();
     }
 
+    pub fn set_int(&mut self, block: &BlockId, offset: i32, value: i32, ok_to_log: bool) {
+        todo!();
+    }
+
     pub fn set_string(&mut self, block: &BlockId, offset: i32, value: String, ok_to_log: bool) {
         todo!();
     }
