@@ -13,7 +13,7 @@ pub struct TinyDB {
 }
 
 impl TinyDB {
-    pub fn new(dir: impl Into<PathBuf>, block_size: u64, buffer_size: u64) -> Result<Self> {
+    pub fn new(dir: impl Into<PathBuf>, block_size: i32, buffer_size: u64) -> Result<Self> {
         let db_dir = dir.into();
         let file_manager = Arc::new(Mutex::new(FileManager::new(db_dir, block_size)?));
         let log_manager = Arc::new(Mutex::new(LogManager::new(

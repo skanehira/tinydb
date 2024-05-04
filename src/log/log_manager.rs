@@ -41,7 +41,7 @@ impl LogManager {
             Self::append_new_block(&mut fm, &mut log_page, &log_file)?
         } else {
             // if block_count is not 0, read the last block of the log file
-            let block = BlockId::new(log_file.clone(), block_count - 1);
+            let block = BlockId::new(log_file.clone(), block_count as i32 - 1);
 
             fm.read(&block, &mut log_page)?;
             block
@@ -115,7 +115,7 @@ impl LogManager {
         log_file: &str,
     ) -> Result<BlockId> {
         let block_id = file_manager.append_block(log_file)?;
-        log_page.set_int(0, file_manager.block_size as i32);
+        log_page.set_int(0, file_manager.block_size);
         // why write the log page to the new block?
         file_manager.write(&block_id, log_page)?;
         Ok(block_id)
@@ -146,9 +146,9 @@ mod tests {
         let tempdir = tempfile::tempdir().unwrap();
         let block_size = 32;
         let record = b"hello";
-        let boundary = (block_size - record.len() - 4) as i32;
+        let boundary = block_size - record.len() as i32 - 4;
         let file_manager = Arc::new(Mutex::new(
-            FileManager::new(tempdir.path(), block_size as u64).unwrap(),
+            FileManager::new(tempdir.path(), block_size).unwrap(),
         ));
         let mut log_manager = LogManager::new(file_manager, "log".to_string()).unwrap();
         let lsn = log_manager.append(record).unwrap();
@@ -169,7 +169,7 @@ mod tests {
         let record = b"hello";
         let record2 = b"world";
         let file_manager = Arc::new(Mutex::new(
-            FileManager::new(tempdir.path(), block_size as u64).unwrap(),
+            FileManager::new(tempdir.path(), block_size).unwrap(),
         ));
         let mut log_manager = LogManager::new(file_manager, "log".to_string()).unwrap();
         let lsn = log_manager.append(record).unwrap();
@@ -179,7 +179,7 @@ mod tests {
         assert_eq!(lsn, 2);
         assert_eq!(log_manager.latest_lsn, 2);
         let contents = log_manager.log_page.contents();
-        let boundary = block_size - record.len() - record2.len() - 8;
+        let boundary = block_size as usize - record.len() - record2.len() - 8;
         assert_eq!(
             contents[boundary..],
             [5, 0, 0, 0, b'w', b'o', b'r', b'l', b'd', 5, 0, 0, 0, b'h', b'e', b'l', b'l', b'o']
@@ -192,7 +192,7 @@ mod tests {
         let block_size = 20;
         let record = b"hello";
         let file_manager = Arc::new(Mutex::new(
-            FileManager::new(tempdir.path(), block_size as u64).unwrap(),
+            FileManager::new(tempdir.path(), block_size).unwrap(),
         ));
         let mut log_manager = LogManager::new(file_manager, "log".to_string()).unwrap();
         log_manager.append(record).unwrap();
@@ -203,7 +203,7 @@ mod tests {
         );
         log_manager.inner_flush().unwrap();
         let data = std::fs::read(tempdir.path().join("log")).unwrap();
-        let boundary = block_size - record.len() - size_of::<i32>();
+        let boundary = block_size as usize - record.len() - size_of::<i32>();
         assert_eq!(
             data.get(boundary..).unwrap(),
             [5, 0, 0, 0, b'h', b'e', b'l', b'l', b'o']
@@ -217,7 +217,7 @@ mod tests {
         let record = b"hello";
         let record2 = b"world";
         let file_manager = Arc::new(Mutex::new(
-            FileManager::new(tempdir.path(), block_size as u64).unwrap(),
+            FileManager::new(tempdir.path(), block_size).unwrap(),
         ));
         let mut log_manager = LogManager::new(file_manager, "log".to_string()).unwrap();
         log_manager.append(record).unwrap();

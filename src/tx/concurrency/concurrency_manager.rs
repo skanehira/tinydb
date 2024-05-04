@@ -8,12 +8,12 @@ use crate::file::block::BlockId;
 
 use super::lock_table::LockTable;
 
-pub struct ConcurrencyMgr {
+pub struct ConcurrencyManager {
     lock_table: Arc<Mutex<LockTable>>,
     locks: HashMap<BlockId, String>,
 }
 
-impl ConcurrencyMgr {
+impl ConcurrencyManager {
     pub fn new(lock_table: LockTable) -> Self {
         Self {
             lock_table: Arc::new(Mutex::new(lock_table)),
@@ -58,6 +58,14 @@ impl ConcurrencyMgr {
             self.locks.insert(block.clone(), "X".to_string());
         }
         Ok(())
+    }
+
+    pub fn release(&mut self) {
+        for block in self.locks.keys() {
+            self.lock_table.lock().unwrap().unlock(block);
+        }
+
+        self.locks.clear();
     }
 
     // 同一トランザクションですでに排他ロックがある場合はtrueを返す

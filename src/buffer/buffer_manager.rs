@@ -14,7 +14,7 @@ static MAX_TIME: OnceLock<u128> = OnceLock::new();
 
 pub struct BufferManager {
     buffer_pool: Vec<Arc<Mutex<Buffer>>>,
-    num_available: u64,
+    pub num_available: u64,
 }
 
 impl BufferManager {
@@ -42,10 +42,6 @@ impl BufferManager {
             buffer_pool,
             num_available: num_buffers,
         }
-    }
-
-    pub fn available(&self) -> u64 {
-        self.num_available
     }
 
     pub fn flush_all(&mut self, txnum: i32) {
@@ -135,11 +131,11 @@ mod tests {
             LogManager::new(file_manager.clone(), "log".to_string()).unwrap(),
         ));
         let mut buffer_manager = BufferManager::new(file_manager, log_manager, 3);
-        assert_eq!(buffer_manager.available(), 3);
+        assert_eq!(buffer_manager.num_available, 3);
         let block = BlockId::new("test".to_string(), 0);
         let buf = buffer_manager.pin(&block).unwrap();
         assert_eq!(buf.lock().unwrap().block(), Some(&block));
-        assert_eq!(buffer_manager.available(), 2);
+        assert_eq!(buffer_manager.num_available, 2);
     }
 
     #[test]
@@ -150,7 +146,7 @@ mod tests {
             LogManager::new(file_manager.clone(), "log".to_string()).unwrap(),
         ));
         let mut buffer_manager = BufferManager::new(file_manager, log_manager, 1);
-        assert_eq!(buffer_manager.available(), 1);
+        assert_eq!(buffer_manager.num_available, 1);
         let block = BlockId::new("test".to_string(), 0);
         let buf = buffer_manager.pin(&block).unwrap();
         assert_eq!(buf.lock().unwrap().block(), Some(&block));
@@ -167,7 +163,7 @@ mod tests {
             LogManager::new(file_manager.clone(), "log".to_string()).unwrap(),
         ));
         let mut buffer_manager = BufferManager::new(file_manager, log_manager, 3);
-        assert_eq!(buffer_manager.available(), 3);
+        assert_eq!(buffer_manager.num_available, 3);
         let block = BlockId::new("test".to_string(), 0);
         let buf = buffer_manager.pin(&block).unwrap();
         assert_eq!(buf.lock().unwrap().block(), Some(&block));
@@ -183,12 +179,12 @@ mod tests {
             LogManager::new(file_manager.clone(), "log".to_string()).unwrap(),
         ));
         let mut buffer_manager = BufferManager::new(file_manager, log_manager, 3);
-        assert_eq!(buffer_manager.available(), 3);
+        assert_eq!(buffer_manager.num_available, 3);
         let block = BlockId::new("test".to_string(), 0);
         let buf = buffer_manager.pin(&block).unwrap();
         assert_eq!(buf.lock().unwrap().block(), Some(&block));
-        assert_eq!(buffer_manager.available(), 2);
+        assert_eq!(buffer_manager.num_available, 2);
         buffer_manager.unpin(buf);
-        assert_eq!(buffer_manager.available(), 3);
+        assert_eq!(buffer_manager.num_available, 3);
     }
 }

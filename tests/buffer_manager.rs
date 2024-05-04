@@ -17,7 +17,7 @@ fn buffer_manager_test() -> Result<()> {
         buffer_manager.pin(&BlockId::new("testfile".into(), 1))?,
     ]);
 
-    println!("Available buffers: {}", buffer_manager.available());
+    println!("Available buffers: {}", buffer_manager.num_available);
     {
         println!("Attempting to pin block 3...");
         let result = buffer_manager.pin(&BlockId::new("testfile".into(), 3));

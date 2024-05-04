@@ -20,7 +20,7 @@ impl From<Vec<u8>> for Page {
 }
 
 impl Page {
-    pub fn new(block_size: u64) -> Page {
+    pub fn new(block_size: i32) -> Page {
         Page {
             buffer: Cursor::new(vec![0; block_size as usize]),
         }

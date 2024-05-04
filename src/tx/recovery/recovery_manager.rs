@@ -18,22 +18,22 @@ use super::{
     start_record::StartRecord,
 };
 
-pub struct RecoverManager {
+pub struct RecoveryManager {
     log_manager: Arc<Mutex<LogManager>>,
     buffer_manager: Arc<Mutex<BufferManager>>,
     tx: Arc<Mutex<Transaction>>,
     tx_num: i32,
 }
 
-impl RecoverManager {
+impl RecoveryManager {
     pub fn new(
         tx: Arc<Mutex<Transaction>>,
         tx_num: i32,
         log_manager: Arc<Mutex<LogManager>>,
         buffer_manager: Arc<Mutex<BufferManager>>,
-    ) -> Result<RecoverManager> {
+    ) -> Result<RecoveryManager> {
         StartRecord::write_to_log(&mut log_manager.lock().unwrap(), tx_num)?;
-        Ok(RecoverManager {
+        Ok(RecoveryManager {
             log_manager,
             buffer_manager,
             tx,
@@ -41,14 +41,14 @@ impl RecoverManager {
         })
     }
 
-    pub fn set_int(&self, buffer: &mut Buffer, offset: i32) -> Result<()> {
+    pub fn set_int(&self, buffer: &mut Buffer, offset: i32) -> Result<i32> {
         let old_value = buffer.contents_mut().get_int(offset as usize);
         let block = buffer.block().unwrap();
         let mut log_manager = self.log_manager.lock().unwrap();
         SetIntRecord::write_to_log(&mut log_manager, self.tx_num, block, offset, old_value)
     }
 
-    pub fn set_string(&self, buffer: &mut Buffer, offset: i32) -> Result<()> {
+    pub fn set_string(&self, buffer: &mut Buffer, offset: i32) -> Result<i32> {
         let old_value = buffer.contents_mut().get_string(offset as usize)?;
         let block = buffer.block().unwrap();
         let mut log_manager = self.log_manager.lock().unwrap();

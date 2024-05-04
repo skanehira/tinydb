@@ -3,11 +3,11 @@ use std::hash::{DefaultHasher, Hasher as _};
 #[derive(Default, Debug, Clone, Eq)]
 pub struct BlockId {
     pub filename: String,
-    pub num: u64,
+    pub num: i32,
 }
 
 impl BlockId {
-    pub fn new(filename: String, num: u64) -> BlockId {
+    pub fn new(filename: String, num: i32) -> BlockId {
         BlockId { filename, num }
     }
 

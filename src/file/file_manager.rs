@@ -10,13 +10,13 @@ use std::{
 #[derive(Default)]
 pub struct FileManager {
     pub db_dir: PathBuf,
-    pub block_size: u64,
+    pub block_size: i32,
     pub is_new: bool,
     pub open_files: HashMap<String, File>,
 }
 
 impl FileManager {
-    pub fn new(db_dir: impl Into<PathBuf>, block_size: u64) -> Result<Self> {
+    pub fn new(db_dir: impl Into<PathBuf>, block_size: i32) -> Result<Self> {
         let db_dir = db_dir.into();
         let is_new = !db_dir.exists();
         if is_new {
@@ -45,7 +45,7 @@ impl FileManager {
         let block_size = self.block_size;
         let mut file = self.get_file(&block.filename)?;
         let offset = block.num * block_size;
-        file.seek(std::io::SeekFrom::Start(offset))?;
+        file.seek(std::io::SeekFrom::Start(offset as u64))?;
         _ = file.read(page.contents_mut())?;
         Ok(())
     }
@@ -55,7 +55,7 @@ impl FileManager {
         let block_size = self.block_size;
         let mut file = self.get_file(&block.filename)?;
         let offset = block.num * block_size;
-        file.seek(std::io::SeekFrom::Start(offset))?;
+        file.seek(std::io::SeekFrom::Start(offset as u64))?;
         file.write_all(page.contents())?;
         Ok(())
     }
@@ -78,11 +78,11 @@ impl FileManager {
     }
 
     pub fn append_block(&mut self, filename: &str) -> Result<BlockId> {
-        let block = BlockId::new(filename.to_string(), self.block_count(filename)?);
+        let block = BlockId::new(filename.to_string(), self.block_count(filename)? as i32);
         let offset = block.num * self.block_size;
         let bytes = vec![0; self.block_size as usize];
         let mut file = self.get_file(filename)?;
-        file.seek(std::io::SeekFrom::Start(offset))?;
+        file.seek(std::io::SeekFrom::Start(offset as u64))?;
         file.write_all(&bytes)?;
         Ok(block)
     }
@@ -90,7 +90,7 @@ impl FileManager {
     // length returns block count
     pub fn block_count(&mut self, filename: &str) -> Result<u64> {
         let file = self.get_file(filename)?;
-        Ok(file.metadata()?.len() / self.block_size)
+        Ok(file.metadata()?.len() / self.block_size as u64)
     }
 }
 
@@ -144,7 +144,10 @@ mod tests {
         assert_eq!(block.num, 0);
         assert_eq!(block.filename, "test");
         let file = file_manager.get_file(&block.filename).unwrap();
-        assert_eq!(file.metadata().unwrap().len(), file_manager.block_size);
+        assert_eq!(
+            file.metadata().unwrap().len(),
+            file_manager.block_size as u64
+        );
     }
 
     #[test]
@@ -159,7 +162,10 @@ mod tests {
         assert_eq!(block.num, 1);
         assert_eq!(block.filename, "test");
         let file = file_manager.get_file(&block.filename).unwrap();
-        assert_eq!(file.metadata().unwrap().len(), file_manager.block_size * 2);
+        assert_eq!(
+            file.metadata().unwrap().len(),
+            file_manager.block_size as u64 * 2
+        );
         assert!(file_manager.open_files.contains_key("test"));
     }
 

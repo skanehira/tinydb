@@ -76,7 +76,7 @@ fn create_log_record(s: String, n: i32) -> Result<Vec<u8>> {
     let number_position = string_position + Page::max_length(s.len());
     let blocksize = number_position + std::mem::size_of::<i32>();
 
-    let mut page = Page::new(blocksize as u64);
+    let mut page = Page::new(blocksize as i32);
 
     page.set_string(string_position, &s);
     page.set_int(number_position, n);
