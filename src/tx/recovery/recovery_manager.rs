@@ -5,13 +5,16 @@ use std::{
 };
 
 use crate::{
-    buffer::buffer_manager::BufferManager, log::log_manager::LogManager,
+    buffer::{buffer::Buffer, buffer_manager::BufferManager},
+    log::log_manager::LogManager,
     tx::transaction::Transaction,
 };
 
 use super::{
     commit_record::CommitRecord,
     record::{create_log_record, LogRecordType},
+    set_int_record::SetIntRecord,
+    set_string_record::SetStringRecord,
     start_record::StartRecord,
 };
 
@@ -36,6 +39,20 @@ impl RecoverManager {
             tx,
             tx_num,
         })
+    }
+
+    pub fn set_int(&self, buffer: &mut Buffer, offset: i32) -> Result<()> {
+        let old_value = buffer.contents_mut().get_int(offset as usize);
+        let block = buffer.block().unwrap();
+        let mut log_manager = self.log_manager.lock().unwrap();
+        SetIntRecord::write_to_log(&mut log_manager, self.tx_num, block, offset, old_value)
+    }
+
+    pub fn set_string(&self, buffer: &mut Buffer, offset: i32) -> Result<()> {
+        let old_value = buffer.contents_mut().get_string(offset as usize)?;
+        let block = buffer.block().unwrap();
+        let mut log_manager = self.log_manager.lock().unwrap();
+        SetStringRecord::write_to_log(&mut log_manager, self.tx_num, block, offset, old_value)
     }
 
     pub fn commit(&mut self) -> Result<()> {
@@ -113,7 +130,7 @@ impl RecoverManager {
         for bytes in iter {
             let mut record = create_log_record(&bytes)?;
             if record.tx_number() == self.tx_num {
-                if record.op() == super::record::LogRecordType::Start {
+                if record.op() == LogRecordType::Start {
                     break;
                 }
                 record.undo(&mut self.tx.lock().unwrap())?;
@@ -131,6 +148,8 @@ impl RecoverManager {
         Ok(())
     }
 
+    /// do_recover はリカバリ処理を行います
+    /// ログを逆順に読み取り、コミット済みとロールバック済み以外のトランザクションをロールバックします
     fn do_recover(&mut self) -> Result<()> {
         let mut finished = HashMap::new();
         let iter = self.log_manager.lock().unwrap().iter();

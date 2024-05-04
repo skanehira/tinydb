@@ -30,6 +30,13 @@ impl std::fmt::Display for BlockId {
     }
 }
 
+impl std::hash::Hash for BlockId {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.filename.hash(state);
+        self.num.hash(state);
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

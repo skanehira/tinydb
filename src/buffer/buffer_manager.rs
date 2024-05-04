@@ -10,7 +10,7 @@ use std::{
 
 use super::buffer::Buffer;
 
-static MAX_TIME: OnceLock<u64> = OnceLock::new();
+static MAX_TIME: OnceLock<u128> = OnceLock::new();
 
 pub struct BufferManager {
     buffer_pool: Vec<Arc<Mutex<Buffer>>>,
@@ -69,7 +69,9 @@ impl BufferManager {
         let now = SystemTime::now();
         let mut buffer = self.try_pin(block);
         while buffer.is_none() && !self.waiting_too_long(now) {
-            std::thread::sleep(std::time::Duration::from_millis(*MAX_TIME.get().unwrap()));
+            std::thread::sleep(std::time::Duration::from_millis(
+                *MAX_TIME.get().unwrap() as u64
+            ));
             buffer = self.try_pin(block);
         }
         let Some(buffer) = buffer else {
@@ -103,7 +105,7 @@ impl BufferManager {
             .duration_since(start_time)
             .unwrap()
             .as_millis()
-            > (*MAX_TIME.get().unwrap()) as u128
+            > *MAX_TIME.get().unwrap()
     }
 
     pub fn find_existing_buffer(&self, block: &BlockId) -> Option<Arc<Mutex<Buffer>>> {
