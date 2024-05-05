@@ -1,4 +1,7 @@
-use crate::{buffer::buffer_manager::BufferManager, file::file_manager::FileManager, log::log_manager::LogManager};
+use crate::{
+    buffer::buffer_manager::BufferManager, file::file_manager::FileManager,
+    log::log_manager::LogManager, tx::concurrency::lock_table::LockTable,
+};
 use anyhow::Result;
 use std::{
     path::PathBuf,
@@ -8,8 +11,10 @@ use std::{
 static LOG_FILE: &str = "tinydb.log";
 
 pub struct TinyDB {
+    pub file_manager: Arc<Mutex<FileManager>>,
     pub log_manager: Arc<Mutex<LogManager>>,
     pub buffer_manager: Arc<Mutex<BufferManager>>,
+    pub lock_table: Arc<Mutex<LockTable>>,
 }
 
 impl TinyDB {
@@ -25,9 +30,12 @@ impl TinyDB {
             log_manager.clone(),
             buffer_size,
         )));
+        let lock_table = Arc::new(Mutex::new(LockTable::default()));
         Ok(Self {
+            file_manager,
             log_manager,
             buffer_manager,
+            lock_table,
         })
     }
 }

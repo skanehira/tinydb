@@ -96,6 +96,6 @@ impl LogRecord for SetIntRecord {
         tx.pin(&self.block);
         tx.set_int(&self.block, self.offset, self.value, false)?;
         tx.unpin(&self.block);
-        todo!()
+        Ok(())
     }
 }

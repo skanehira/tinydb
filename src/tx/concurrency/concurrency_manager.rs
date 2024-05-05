@@ -14,9 +14,9 @@ pub struct ConcurrencyManager {
 }
 
 impl ConcurrencyManager {
-    pub fn new(lock_table: LockTable) -> Self {
+    pub fn new(lock_table: Arc<Mutex<LockTable>>) -> Self {
         Self {
-            lock_table: Arc::new(Mutex::new(lock_table)),
+            lock_table,
             locks: HashMap::new(),
         }
     }

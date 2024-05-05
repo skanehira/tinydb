@@ -7,15 +7,18 @@ use std::sync::{
 use crate::{
     buffer::buffer_manager::BufferManager,
     file::{block::BlockId, file_manager::FileManager},
+    log::log_manager::LogManager,
 };
 
 use super::{
-    buffer_list::BufferList, concurrency::concurrency_manager::ConcurrencyManager,
+    buffer_list::BufferList,
+    concurrency::{concurrency_manager::ConcurrencyManager, lock_table::LockTable},
     recovery::recovery_manager::RecoveryManager,
 };
 
 static NEXT_TX_NUM: AtomicI32 = AtomicI32::new(0);
 
+#[derive(Clone)]
 pub struct Transaction {
     recovery_manager: Arc<Mutex<RecoveryManager>>,
     concurrency_manager: Arc<Mutex<ConcurrencyManager>>,
@@ -27,21 +30,25 @@ pub struct Transaction {
 
 impl Transaction {
     pub fn new(
-        recovery_manager: Arc<Mutex<RecoveryManager>>,
-        concurrency_manager: Arc<Mutex<ConcurrencyManager>>,
-        buffer_manager: Arc<Mutex<BufferManager>>,
         file_manager: Arc<Mutex<FileManager>>,
-    ) -> Self {
+        log_manager: Arc<Mutex<LogManager>>,
+        buffer_manager: Arc<Mutex<BufferManager>>,
+        lock_table: Arc<Mutex<LockTable>>,
+    ) -> Result<Self> {
         let tx_num = NEXT_TX_NUM.fetch_add(1, Ordering::SeqCst);
         let buffer_list = Arc::new(Mutex::new(BufferList::new(buffer_manager.clone())));
-        Self {
+        let recovery_manager =
+            RecoveryManager::new(tx_num, log_manager.clone(), buffer_manager.clone())?;
+        let recovery_manager = Arc::new(Mutex::new(recovery_manager));
+        let concurrency_manager = Arc::new(Mutex::new(ConcurrencyManager::new(lock_table.clone())));
+        Ok(Self {
             recovery_manager,
             concurrency_manager,
             buffer_manager,
             file_manager,
             tx_num,
             buffer_list,
-        }
+        })
     }
 
     pub fn commit(&mut self) -> Result<()> {
@@ -53,7 +60,7 @@ impl Transaction {
     }
 
     pub fn rollback(&mut self) -> Result<()> {
-        self.recovery_manager.lock().unwrap().rollback()?;
+        self.recovery_manager.lock().unwrap().rollback(&mut self.clone())?;
         println!("transaction {} rolled back", self.tx_num);
         self.concurrency_manager.lock().unwrap().release();
         self.buffer_list.lock().unwrap().unpin_all();
@@ -62,7 +69,7 @@ impl Transaction {
 
     pub fn recover(&mut self) -> Result<()> {
         self.buffer_manager.lock().unwrap().flush_all(self.tx_num);
-        self.recovery_manager.lock().unwrap().recover()?;
+        self.recovery_manager.lock().unwrap().recover(&mut self.clone())?;
         Ok(())
     }
 

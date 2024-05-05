@@ -96,6 +96,6 @@ impl LogRecord for SetStringRecord {
         tx.pin(&self.block);
         tx.set_string(&self.block, self.offset, self.value.clone(), false)?;
         tx.unpin(&self.block);
-        todo!()
+        Ok(())
     }
 }

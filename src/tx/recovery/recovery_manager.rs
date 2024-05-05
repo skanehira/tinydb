@@ -21,13 +21,11 @@ use super::{
 pub struct RecoveryManager {
     log_manager: Arc<Mutex<LogManager>>,
     buffer_manager: Arc<Mutex<BufferManager>>,
-    tx: Arc<Mutex<Transaction>>,
     tx_num: i32,
 }
 
 impl RecoveryManager {
     pub fn new(
-        tx: Arc<Mutex<Transaction>>,
         tx_num: i32,
         log_manager: Arc<Mutex<LogManager>>,
         buffer_manager: Arc<Mutex<BufferManager>>,
@@ -36,7 +34,6 @@ impl RecoveryManager {
         Ok(RecoveryManager {
             log_manager,
             buffer_manager,
-            tx,
             tx_num,
         })
     }
@@ -63,8 +60,8 @@ impl RecoveryManager {
         Ok(())
     }
 
-    pub fn rollback(&mut self) -> Result<()> {
-        self.do_rollback()?;
+    pub fn rollback(&mut self, tx: &mut Transaction) -> Result<()> {
+        self.do_rollback(tx)?;
         self.buffer_manager.lock().unwrap().flush_all(self.tx_num);
         let lm = &mut self.log_manager.lock().unwrap();
         let lsn = CommitRecord::write_to_log(lm, self.tx_num)?;
@@ -125,7 +122,7 @@ impl RecoveryManager {
     ///     1. `ROLLBACK 1` レコードをロールバック
     ///     2. `SETSTRING 1` レコードをロールバック
     ///     3. `SETINT 1` レコードをロールバック
-    fn do_rollback(&mut self) -> Result<()> {
+    fn do_rollback(&mut self, tx: &mut Transaction) -> Result<()> {
         let iter = self.log_manager.lock().unwrap().iter();
         for bytes in iter {
             let mut record = create_log_record(&bytes)?;
@@ -133,14 +130,14 @@ impl RecoveryManager {
                 if record.op() == LogRecordType::Start {
                     break;
                 }
-                record.undo(&mut self.tx.lock().unwrap())?;
+                record.undo(tx)?;
             }
         }
         Ok(())
     }
 
-    pub fn recover(&mut self) -> Result<()> {
-        self.do_recover()?;
+    pub fn recover(&mut self, tx: &mut Transaction) -> Result<()> {
+        self.do_recover(tx)?;
         self.buffer_manager.lock().unwrap().flush_all(self.tx_num);
         let lm = &mut self.log_manager.lock().unwrap();
         let lsn = CommitRecord::write_to_log(lm, self.tx_num)?;
@@ -150,7 +147,7 @@ impl RecoveryManager {
 
     /// do_recover はリカバリ処理を行います
     /// ログを逆順に読み取り、コミット済みとロールバック済み以外のトランザクションをロールバックします
-    fn do_recover(&mut self) -> Result<()> {
+    fn do_recover(&mut self, tx: &mut Transaction) -> Result<()> {
         let mut finished = HashMap::new();
         let iter = self.log_manager.lock().unwrap().iter();
         for bytes in iter {
@@ -162,7 +159,7 @@ impl RecoveryManager {
                 }
                 _ => {
                     if !finished.contains_key(&record.tx_number()) {
-                        record.undo(&mut self.tx.lock().unwrap())?;
+                        record.undo(tx)?;
                     }
                 }
             }
