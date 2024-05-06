@@ -26,12 +26,12 @@ impl std::fmt::Display for SetStringRecord {
 }
 
 impl SetStringRecord {
-    pub fn new(page: &mut Page) -> Result<Self> {
+    pub fn new(page: &mut Page) -> Self {
         let tpos = I32_SIZE;
         let tx_num = page.get_int(tpos);
 
         let fpos = tpos + I32_SIZE;
-        let filename = page.get_string(fpos)?;
+        let filename = page.get_string(fpos);
 
         let bpos = fpos + Page::max_length(filename.len());
         let block_num = page.get_int(bpos);
@@ -42,14 +42,14 @@ impl SetStringRecord {
         let offset = page.get_int(opos);
 
         let vpos = opos + I32_SIZE;
-        let value = page.get_string(vpos)?;
+        let value = page.get_string(vpos);
 
-        Ok(Self {
+        Self {
             tx_num,
             offset,
             value,
             block,
-        })
+        }
     }
 
     /// Write a setString record to the log

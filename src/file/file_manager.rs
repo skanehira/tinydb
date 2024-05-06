@@ -181,7 +181,7 @@ mod tests {
         file_manager.write(&block, &mut page).unwrap();
         let mut read_page = Page::new(32);
         file_manager.read(&block, &mut read_page).unwrap();
-        assert_eq!(read_page.get_string(0).unwrap(), "hello");
-        assert_eq!(read_page.get_string(10).unwrap(), "world");
+        assert_eq!(read_page.get_string(0), "hello");
+        assert_eq!(read_page.get_string(10), "world");
     }
 }

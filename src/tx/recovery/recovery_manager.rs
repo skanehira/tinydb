@@ -46,7 +46,7 @@ impl RecoveryManager {
     }
 
     pub fn set_string(&self, buffer: &mut Buffer, offset: i32) -> Result<i32> {
-        let old_value = buffer.contents_mut().get_string(offset as usize)?;
+        let old_value = buffer.contents_mut().get_string(offset as usize);
         let block = buffer.block().unwrap();
         let mut log_manager = self.log_manager.lock().unwrap();
         SetStringRecord::write_to_log(&mut log_manager, self.tx_num, block, offset, old_value)

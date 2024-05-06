@@ -47,8 +47,8 @@ pub fn create_log_record(bytes: &[u8]) -> Result<Box<dyn LogRecord>> {
         LogRecordType::Start => Ok(Box::new(StartRecord::new(&mut page))),
         LogRecordType::Commit => Ok(Box::new(CommitRecord::new(&mut page))),
         LogRecordType::Rollback => Ok(Box::new(RollbackRecord::new(&mut page))),
-        LogRecordType::SetInt => Ok(Box::new(SetIntRecord::new(&mut page)?)),
-        LogRecordType::SetString => Ok(Box::new(SetStringRecord::new(&mut page)?)),
+        LogRecordType::SetInt => Ok(Box::new(SetIntRecord::new(&mut page))),
+        LogRecordType::SetString => Ok(Box::new(SetStringRecord::new(&mut page))),
         LogRecordType::Unknown => bail!("Unknown log record type '{:X}'", op),
     }
 }

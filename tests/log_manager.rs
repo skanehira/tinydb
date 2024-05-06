@@ -49,7 +49,7 @@ fn print_log_records(
     let iterator = log_manager.iter();
     for bytes in iterator {
         let mut page = Page::from(bytes);
-        let string = page.get_string(0)?;
+        let string = page.get_string(0);
         let number_position = Page::max_length(string.len());
         let value = page.get_int(number_position);
 

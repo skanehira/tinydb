@@ -118,6 +118,6 @@ mod tests {
 
         let mut new_buffer = Buffer::new(file_manager, log_manager);
         new_buffer.assign_to_block(&block);
-        assert_eq!(new_buffer.contents.get_string(0).unwrap(), "hello");
+        assert_eq!(new_buffer.contents.get_string(0), "hello");
     }
 }

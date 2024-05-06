@@ -92,7 +92,7 @@ impl Transaction {
         let buffers = self.buffer_list.lock().unwrap();
         let buffer = buffers.get_buffer(block).unwrap();
         let mut buffer = buffer.lock().unwrap();
-        buffer.contents_mut().get_string(offset as usize).unwrap()
+        buffer.contents_mut().get_string(offset as usize)
     }
 
     pub fn set_int(

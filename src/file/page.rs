@@ -52,9 +52,9 @@ impl Page {
         self.buffer.write_all(bytes).unwrap();
     }
 
-    pub fn get_string(&mut self, offset: usize) -> Result<String> {
+    pub fn get_string(&mut self, offset: usize) -> String {
         let bytes = self.get_bytes(offset);
-        Ok(String::from_utf8(bytes.to_vec())?)
+        String::from_utf8_lossy(&bytes).to_string()
     }
 
     pub fn set_string(&mut self, offset: usize, value: &str) {
@@ -97,7 +97,7 @@ mod tests {
     fn should_can_set_and_get_string() {
         let mut page = Page::new(12);
         page.set_string(2, "hello");
-        assert_eq!(page.get_string(2).unwrap(), "hello");
+        assert_eq!(page.get_string(2), "hello");
     }
 
     #[test]

@@ -26,12 +26,12 @@ impl std::fmt::Display for SetIntRecord {
 }
 
 impl SetIntRecord {
-    pub fn new(page: &mut Page) -> Result<Self> {
+    pub fn new(page: &mut Page) -> Self {
         let tpos = I32_SIZE;
         let tx_num = page.get_int(tpos);
 
         let fpos = tpos + I32_SIZE;
-        let filename = page.get_string(fpos)?;
+        let filename = page.get_string(fpos);
 
         let bpos = fpos + Page::max_length(filename.len());
         let block_num = page.get_int(bpos);
@@ -44,12 +44,12 @@ impl SetIntRecord {
         let vpos = opos + I32_SIZE;
         let value = page.get_int(vpos);
 
-        Ok(Self {
+        Self {
             tx_num,
             offset,
             value,
             block,
-        })
+        }
     }
 
     /// Write a setInt record to the log
