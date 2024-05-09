@@ -3,7 +3,7 @@ use crate::{file::block::BlockId, record::schema::FieldTypes, tx::transaction::T
 use anyhow::{anyhow, Result};
 use std::sync::{Arc, Mutex};
 
-#[derive(PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum RecordType {
     Empty,
     Used,
@@ -23,19 +23,19 @@ impl From<RecordType> for i32 {
 /// ファイル・ブロック・スロット・レコードの関係性は以下のとおり
 ///
 /// ```text
-///                                                             file
-/// ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-///                                            block                                                    other bloks
-/// ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━┻━━━━━━━━━━━┓
-///                                slot                                         other slots
-/// ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━┻━━━━━━━━━━━┓
-///                                          record
-///                 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━┓
-/// ┌───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┐
-/// │ 1 │ 0 │ 0 │ 0 │ 6 │ 0 │ 0 │ 0 │ 5 │ 0 │ 0 │ 0 │ h │ e │ l │ l │ o │...│...│...│...│...│...│...│...│...│...│...│...│
-/// └───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┘
-/// ┗━━━━━━━┳━━━━━━━┻━━━━━━━┳━━━━━━━┻━━━━━━━┳━━━━━━━┻━━━━━━━━━┳━━━━━━━━━┛
-///    record type       integer      varchar length     varchar(5)
+///                                              file
+/// ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+///                                   block                                             other bloks
+/// ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━┻━━━━━━━━━━━┓
+///                        slot                                 other slots
+/// ┏━━━━━━━━━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━┻━━━━━━━━━━━┓
+///                                record
+///                 ┏━━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━━━━━━┓
+/// ┌───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┐
+/// │ 1 │ 0 │ 0 │ 0 │ 6 │ 0 │ 0 │ 0 │ h │ e │ l │ l │ o │...│...│...│...│...│...│...│...│...│...│...│...│
+/// └───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┘
+/// ┗━━━━━━━┳━━━━━━━┻━━━━━━━┳━━━━━━━┻━━━━━━━━━┳━━━━━━━━━┛
+///    record type       integer         varchar(5)
 /// (0: emtpy, 1: used)
 /// ```
 pub struct RecordPage {
@@ -46,21 +46,35 @@ pub struct RecordPage {
 
 impl RecordPage {
     pub fn new(tx: Arc<Mutex<Transaction>>, block: BlockId, layout: Arc<Layout>) -> Self {
+        tx.lock().unwrap().pin(&block);
         Self { tx, block, layout }
     }
 
-    pub fn get_int(&self, slot: i32, field_name: &str) -> i32 {
-        let field_pos = self.offset(slot) + self.layout.offset(field_name);
-        self.tx.lock().unwrap().get_int(&self.block, field_pos)
+    pub fn get_int(&self, slot: i32, field_name: &str) -> Result<i32> {
+        let field_pos = self.offset(slot)
+            + self
+                .layout
+                .offset(field_name)
+                .ok_or_else(|| anyhow!("field offset not found"))?;
+        Ok(self.tx.lock().unwrap().get_int(&self.block, field_pos))
     }
 
-    pub fn get_string(&self, slot: i32, field_name: &str) -> String {
-        let field_pos = self.offset(slot) + self.layout.offset(field_name);
-        self.tx.lock().unwrap().get_string(&self.block, field_pos)
+    pub fn get_string(&self, slot: i32, field_name: &str) -> Result<String> {
+        let field_pos = self.offset(slot)
+            + self
+                .layout
+                .offset(field_name)
+                .ok_or_else(|| anyhow!("field offset not found"))?;
+        Ok(self.tx.lock().unwrap().get_string(&self.block, field_pos))
     }
 
     pub fn set_int(&mut self, slot: i32, field_name: &str, value: i32) -> Result<()> {
-        let field_pos = self.offset(slot) + self.layout.offset(field_name);
+        let field_pos = self.offset(slot)
+            + self
+                .layout
+                .offset(field_name)
+                .ok_or_else(|| anyhow!("field offset not found"))
+                .unwrap();
         self.tx
             .lock()
             .unwrap()
@@ -68,7 +82,11 @@ impl RecordPage {
     }
 
     pub fn set_string(&mut self, slot: i32, field_name: &str, value: String) -> Result<()> {
-        let field_pos = self.offset(slot) + self.layout.offset(field_name);
+        let field_pos = self.offset(slot)
+            + self
+                .layout
+                .offset(field_name)
+                .ok_or_else(|| anyhow!("field offset not found"))?;
         self.tx
             .lock()
             .unwrap()
@@ -90,12 +108,16 @@ impl RecordPage {
                 false,
             )?;
 
-            let schema = &self.layout.schema;
+            let schema = &self.layout.schema.lock().unwrap();
             for field_name in &schema.fields {
                 // ブロックにあるスロットのオフセット + フィールドのオフセット = フィールドの位置
                 // フィールドのオフセット自体は変わらないが、ブロックにあるスロットの断片化を防ぐためスロットの位置が調整されることがあるため
                 // スロットのオフセットは変わることがある
-                let field_pos = self.offset(slot) + self.layout.offset(field_name);
+                let field_pos = self.offset(slot)
+                    + self
+                        .layout
+                        .offset(field_name)
+                        .ok_or_else(|| anyhow!("field offset not found"))?;
                 let field_type = schema
                     .r#type(field_name)
                     .ok_or_else(|| anyhow!("field type not found"))?;
@@ -117,7 +139,7 @@ impl RecordPage {
         self.search_after(slot, RecordType::Used)
     }
 
-    pub fn insert_ater(&mut self, slot: i32) -> Result<i32> {
+    pub fn insert_after(&mut self, slot: i32) -> Result<i32> {
         let new_slot = self.search_after(slot, RecordType::Empty);
         if new_slot >= 0 {
             self.set_record_type(new_slot, RecordType::Used)?;
@@ -144,7 +166,7 @@ impl RecordPage {
 
     fn get_record_type(&self, block: &BlockId, slot: i32) -> RecordType {
         let offset = self.offset(slot);
-        let tx = self.tx.lock().unwrap();
+        let mut tx = self.tx.lock().unwrap();
         let record_type = tx.get_int(block, offset);
         if record_type == 0 {
             RecordType::Empty
@@ -159,5 +181,107 @@ impl RecordPage {
 
     pub fn offset(&self, slot: i32) -> i32 {
         self.layout.slot_size * slot
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{
+        buffer::buffer_manager::BufferManager, file::file_manager::FileManager,
+        log::log_manager::LogManager, record::schema::Schema,
+        tx::concurrency::lock_table::LockTable, LOG_FILE,
+    };
+    use std::path::Path;
+    use tempfile::tempdir;
+
+    fn new_transaction(db_dir: &Path) -> Arc<Mutex<Transaction>> {
+        let block_size = 128;
+        let file_manager = Arc::new(Mutex::new(FileManager::new(db_dir, block_size).unwrap()));
+        let log_manager = Arc::new(Mutex::new(
+            LogManager::new(file_manager.clone(), LOG_FILE.into()).unwrap(),
+        ));
+        let buffer_manager = Arc::new(Mutex::new(BufferManager::new(
+            file_manager.clone(),
+            log_manager.clone(),
+            10,
+        )));
+        let lock_table = Arc::new(Mutex::new(LockTable::default()));
+
+        let tx = Transaction::new(file_manager, log_manager, buffer_manager, lock_table).unwrap();
+
+        Arc::new(Mutex::new(tx))
+    }
+
+    #[test]
+    fn should_can_format() {
+        let mut schema = Schema::default();
+        schema.add_int_field("id".into());
+        schema.add_string_field("name".into(), 8);
+        let schema = Arc::new(Mutex::new(schema));
+        let layout = Arc::new(Layout::try_from_schema(schema.clone()).unwrap());
+
+        // 4bytes: record type
+        // 4bytes: id
+        // 8bytes: name
+        assert_eq!(layout.slot_size, 16);
+
+        let db_dir = tempdir().unwrap();
+        let tx = new_transaction(db_dir.path());
+        let block = BlockId::new("testfile".into(), 0);
+        let mut rp = RecordPage::new(tx.clone(), block, layout);
+
+        rp.format().unwrap();
+
+        let slot = 0;
+        assert_eq!(rp.get_int(slot, "id").unwrap(), 0);
+        assert_eq!(rp.get_string(slot, "name").unwrap(), "");
+    }
+
+    #[test]
+    fn should_can_set_record_date() {
+        let mut schema = Schema::default();
+        schema.add_int_field("id".into());
+        schema.add_string_field("name".into(), 8);
+        let schema = Arc::new(Mutex::new(schema));
+        let layout = Arc::new(Layout::try_from_schema(schema.clone()).unwrap());
+
+        let db_dir = tempdir().unwrap();
+        let tx = new_transaction(db_dir.path());
+        let block = BlockId::new("testfile".into(), 0);
+        let mut rp = RecordPage::new(tx.clone(), block, layout);
+
+        rp.format().unwrap();
+
+        let slot = 0;
+        rp.set_int(slot, "id", 1).unwrap();
+        rp.set_string(slot, "name", "hello".into()).unwrap();
+
+        assert_eq!(rp.get_int(slot, "id").unwrap(), 1);
+        assert_eq!(rp.get_string(slot, "name").unwrap(), "hello");
+    }
+
+    #[test]
+    fn should_can_delete() {
+        let mut schema = Schema::default();
+        schema.add_int_field("id".into());
+        schema.add_string_field("name".into(), 8);
+        let schema = Arc::new(Mutex::new(schema));
+        let layout = Arc::new(Layout::try_from_schema(schema.clone()).unwrap());
+
+        let db_dir = tempdir().unwrap();
+        let tx = new_transaction(db_dir.path());
+        let block = BlockId::new("testfile".into(), 0);
+        let mut rp = RecordPage::new(tx.clone(), block.clone(), layout);
+
+        rp.format().unwrap();
+
+        let slot = 0;
+        rp.set_int(slot, "id", 1).unwrap();
+        rp.set_string(slot, "name", "hello".into()).unwrap();
+
+        rp.delete(slot).unwrap();
+
+        assert_eq!(rp.get_record_type(&block, slot), RecordType::Empty);
     }
 }

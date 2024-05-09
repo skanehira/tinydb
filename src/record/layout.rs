@@ -43,8 +43,8 @@ impl Layout {
         })
     }
 
-    pub fn offset(&self, field_name: &str) -> i32 {
-        self.offsets.get(field_name).copied().unwrap_or(-1)
+    pub fn offset(&self, field_name: &str) -> Option<i32> {
+        self.offsets.get(field_name).copied()
     }
 
     pub fn length_in_bytes(schema: &Schema, field_name: &str) -> Result<i32> {

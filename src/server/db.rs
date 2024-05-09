@@ -1,14 +1,15 @@
 use crate::{
-    buffer::buffer_manager::BufferManager, file::file_manager::FileManager,
-    log::log_manager::LogManager, tx::concurrency::lock_table::LockTable,
+    buffer::buffer_manager::BufferManager,
+    file::file_manager::FileManager,
+    log::log_manager::LogManager,
+    tx::{concurrency::lock_table::LockTable, transaction::Transaction},
+    LOG_FILE,
 };
 use anyhow::Result;
 use std::{
     path::PathBuf,
     sync::{Arc, Mutex},
 };
-
-static LOG_FILE: &str = "tinydb.log";
 
 pub struct TinyDB {
     pub file_manager: Arc<Mutex<FileManager>>,
@@ -37,5 +38,15 @@ impl TinyDB {
             buffer_manager,
             lock_table,
         })
+    }
+
+    pub fn transaction(&self) -> Result<Arc<Mutex<Transaction>>> {
+        let tx = Arc::new(Mutex::new(Transaction::new(
+            self.file_manager.clone(),
+            self.log_manager.clone(),
+            self.buffer_manager.clone(),
+            self.lock_table.clone(),
+        )?));
+        Ok(tx)
     }
 }

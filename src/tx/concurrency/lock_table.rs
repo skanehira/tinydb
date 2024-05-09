@@ -1,25 +1,23 @@
-use anyhow::{bail, Result};
-use std::{collections::HashMap, sync::OnceLock, time::SystemTime};
-
 use crate::file::block::BlockId;
+use anyhow::{bail, Result};
+use std::{
+    collections::HashMap,
+    sync::{Condvar, Mutex},
+    time::SystemTime,
+};
 
-static MAX_TIME: OnceLock<u128> = OnceLock::new();
+const TIMEOUT: std::time::Duration = std::time::Duration::from_millis(3000);
 
 pub struct LockTable {
-    locks: HashMap<BlockId, i32>, // 1: S lock, -1: X lock
+    cond_var: std::sync::Condvar,
+    locks: Mutex<HashMap<BlockId, i32>>, // 1: S lock, -1: X lock
 }
 
 impl Default for LockTable {
     fn default() -> Self {
-        // NOTE: This is a hack to allow setting the MAX_TIME environment variable for testing
-        let _ = MAX_TIME.set(
-            std::env::var("MAX_TIME")
-                .unwrap_or_else(|_| "10000".to_string())
-                .parse()
-                .unwrap(),
-        );
         Self {
-            locks: HashMap::new(),
+            cond_var: Condvar::new(),
+            locks: Mutex::default(),
         }
     }
 }
@@ -27,66 +25,55 @@ impl Default for LockTable {
 impl LockTable {
     pub fn s_lock(&mut self, block: &BlockId) -> Result<()> {
         let now = SystemTime::now();
-        while self.has_x_lock(block) && !Self::waiting_too_long(now) {
-            // This implementation maybe wrong
-            // Should I use condvar?
-            std::thread::sleep(std::time::Duration::from_millis(
-                *MAX_TIME.get().unwrap() as u64
-            ));
+        let mut locks = self.locks.lock().unwrap();
+        while self.has_x_lock(block, &locks) && !Self::waiting_too_long(now) {
+            locks = self.cond_var.wait_timeout(locks, TIMEOUT).unwrap().0;
         }
-        if self.has_x_lock(block) {
-            bail!("Deadlock")
+        if self.has_x_lock(block, &locks) {
+            bail!("Lock timeout")
         }
-        let value = self.get_lock_value(block);
-        self.locks.insert(block.clone(), value + 1);
+        let value = self.get_lock_value(block, &locks);
+        locks.insert(block.clone(), value + 1);
         Ok(())
     }
 
     pub fn x_lock(&mut self, block: &BlockId) -> Result<()> {
         let now = SystemTime::now();
-        while self.has_other_s_lock(block) && !Self::waiting_too_long(now) {
-            // This implementation maybe wrong
-            // Should I use condvar?
-            std::thread::sleep(std::time::Duration::from_millis(
-                *MAX_TIME.get().unwrap() as u64
-            ));
+        let mut locks = self.locks.lock().unwrap();
+        while self.has_other_s_lock(block, &locks) && !Self::waiting_too_long(now) {
+            locks = self.cond_var.wait_timeout(locks, TIMEOUT).unwrap().0;
         }
-        if self.has_other_s_lock(block) {
-            bail!("Deadlock")
+        if self.has_other_s_lock(block, &locks) {
+            bail!("Lock timeout")
         }
-        self.locks.insert(block.clone(), -1);
+        locks.insert(block.clone(), -1);
         Ok(())
     }
 
     pub fn unlock(&mut self, block: &BlockId) {
-        let value = self.get_lock_value(block);
+        let mut locks = self.locks.lock().unwrap();
+        let value = self.get_lock_value(block, &locks);
         if value > 1 {
-            self.locks.insert(block.clone(), value - 1);
+            locks.insert(block.clone(), value - 1);
         } else {
-            self.locks.remove(block);
+            locks.remove(block);
+            self.cond_var.notify_all();
         }
     }
 
-    pub fn has_x_lock(&self, block: &BlockId) -> bool {
-        self.get_lock_value(block) < 0
+    pub fn has_x_lock(&self, block: &BlockId, locks: &HashMap<BlockId, i32>) -> bool {
+        self.get_lock_value(block, locks) < 0
     }
 
-    pub fn has_other_s_lock(&self, block: &BlockId) -> bool {
-        self.get_lock_value(block) > 1
+    pub fn has_other_s_lock(&self, block: &BlockId, locks: &HashMap<BlockId, i32>) -> bool {
+        self.get_lock_value(block, locks) > 1
     }
 
     pub fn waiting_too_long(start_time: SystemTime) -> bool {
-        SystemTime::now()
-            .duration_since(start_time)
-            .unwrap()
-            .as_millis()
-            > *MAX_TIME.get().unwrap()
+        SystemTime::now().duration_since(start_time).unwrap() > TIMEOUT
     }
 
-    pub fn get_lock_value(&self, block: &BlockId) -> i32 {
-        match self.locks.get(block) {
-            Some(value) => *value,
-            None => 0,
-        }
+    pub fn get_lock_value(&self, block: &BlockId, locks: &HashMap<BlockId, i32>) -> i32 {
+        *locks.get(block).unwrap_or(&0)
     }
 }

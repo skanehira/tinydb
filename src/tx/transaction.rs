@@ -21,7 +21,7 @@ static NEXT_TX_NUM: AtomicI32 = AtomicI32::new(0);
 #[derive(Clone)]
 pub struct Transaction {
     recovery_manager: Arc<Mutex<RecoveryManager>>,
-    concurrency_manager: Arc<Mutex<ConcurrencyManager>>,
+    concurrency_manager: ConcurrencyManager,
     buffer_manager: Arc<Mutex<BufferManager>>,
     file_manager: Arc<Mutex<FileManager>>,
     tx_num: i32,
@@ -40,7 +40,7 @@ impl Transaction {
         let recovery_manager =
             RecoveryManager::new(tx_num, log_manager.clone(), buffer_manager.clone())?;
         let recovery_manager = Arc::new(Mutex::new(recovery_manager));
-        let concurrency_manager = Arc::new(Mutex::new(ConcurrencyManager::new(lock_table.clone())));
+        let concurrency_manager = ConcurrencyManager::new(lock_table.clone());
         Ok(Self {
             recovery_manager,
             concurrency_manager,
@@ -54,22 +54,28 @@ impl Transaction {
     pub fn commit(&mut self) -> Result<()> {
         self.recovery_manager.lock().unwrap().commit()?;
         println!("transaction {} committed", self.tx_num);
-        self.concurrency_manager.lock().unwrap().release();
+        self.concurrency_manager.release();
         self.buffer_list.lock().unwrap().unpin_all();
         Ok(())
     }
 
     pub fn rollback(&mut self) -> Result<()> {
-        self.recovery_manager.lock().unwrap().rollback(&mut self.clone())?;
+        self.recovery_manager
+            .lock()
+            .unwrap()
+            .rollback(&mut self.clone())?;
         println!("transaction {} rolled back", self.tx_num);
-        self.concurrency_manager.lock().unwrap().release();
+        self.concurrency_manager.release();
         self.buffer_list.lock().unwrap().unpin_all();
         Ok(())
     }
 
     pub fn recover(&mut self) -> Result<()> {
         self.buffer_manager.lock().unwrap().flush_all(self.tx_num);
-        self.recovery_manager.lock().unwrap().recover(&mut self.clone())?;
+        self.recovery_manager
+            .lock()
+            .unwrap()
+            .recover(&mut self.clone())?;
         Ok(())
     }
 
@@ -81,14 +87,17 @@ impl Transaction {
         self.buffer_list.lock().unwrap().unpin(block).unwrap();
     }
 
-    pub fn get_int(&self, block: &BlockId, offset: i32) -> i32 {
+    pub fn get_int(&mut self, block: &BlockId, offset: i32) -> i32 {
+        self.concurrency_manager.s_lock(block).unwrap();
+
         let buffers = self.buffer_list.lock().unwrap();
         let buffer = buffers.get_buffer(block).unwrap();
         let mut buffer = buffer.lock().unwrap();
         buffer.contents_mut().get_int(offset as usize)
     }
 
-    pub fn get_string(&self, block: &BlockId, offset: i32) -> String {
+    pub fn get_string(&mut self, block: &BlockId, offset: i32) -> String {
+        self.concurrency_manager.s_lock(block).unwrap();
         let buffers = self.buffer_list.lock().unwrap();
         let buffer = buffers.get_buffer(block).unwrap();
         let mut buffer = buffer.lock().unwrap();
@@ -102,8 +111,7 @@ impl Transaction {
         value: i32,
         ok_to_log: bool,
     ) -> Result<()> {
-        let mut concurrency_manager = self.concurrency_manager.lock().unwrap();
-        concurrency_manager.x_lock(block)?;
+        self.concurrency_manager.x_lock(block)?;
 
         let buffer_list = self.buffer_list.lock().unwrap();
         let Some(buffer) = buffer_list.get_buffer(block) else {
@@ -132,8 +140,7 @@ impl Transaction {
         value: String,
         ok_to_log: bool,
     ) -> Result<()> {
-        let mut concurrency_manager = self.concurrency_manager.lock().unwrap();
-        concurrency_manager.x_lock(block).unwrap();
+        self.concurrency_manager.x_lock(block).unwrap();
 
         let buffer_list = self.buffer_list.lock().unwrap();
         let Some(buffer) = buffer_list.get_buffer(block) else {
@@ -158,20 +165,14 @@ impl Transaction {
 
     pub fn size(&mut self, filename: String) -> Result<u64> {
         let dummy_block = BlockId::new(filename.clone(), -1);
-        self.concurrency_manager
-            .lock()
-            .unwrap()
-            .s_lock(&dummy_block)?;
+        self.concurrency_manager.s_lock(&dummy_block)?;
         let mut file_manager = self.file_manager.lock().unwrap();
         file_manager.block_count(&filename)
     }
 
     pub fn append(&mut self, filename: String) -> Result<BlockId> {
         let dummy_block = BlockId::new(filename.clone(), -1);
-        self.concurrency_manager
-            .lock()
-            .unwrap()
-            .x_lock(&dummy_block)?;
+        self.concurrency_manager.x_lock(&dummy_block)?;
         let mut file_manager = self.file_manager.lock().unwrap();
         file_manager.append_block(&filename)
     }

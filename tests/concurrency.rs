@@ -64,6 +64,7 @@ fn concurrency_test() {
                 println!("Transaction A: request slock 1");
                 transaction_a.get_int(&block1, 0);
                 println!("Transaction A: receive slock 1");
+                println!("Transaction A: sleep 1000");
                 sleep(Duration::from_millis(1000));
                 println!("Transaction A: request slock 2");
                 transaction_a.get_int(&block2, 0);
@@ -93,10 +94,11 @@ fn concurrency_test() {
                 println!("Transaction B: request xlock 2");
                 transaction_b.set_int(&block2, 0, 0, false).unwrap();
                 println!("Transaction B: receive xlock 2");
+                println!("Transaction B: sleep 1000");
                 sleep(Duration::from_millis(1000));
                 println!("Transaction B: request slock 1");
                 transaction_b.get_int(&block1, 0);
-                println!("Transaction B: receive slock 1");
+                println!("Transaction B: received slock 1");
                 transaction_b.commit().unwrap();
                 println!("Transaction B: commit");
             }
@@ -121,14 +123,13 @@ fn concurrency_test() {
                 transaction_c.pin(&block2);
                 sleep(Duration::from_millis(500));
                 println!("Transaction C: request xlock 1");
-                transaction_c
-                    .set_int(&block1, 0, 0, false)
-                    .expect("Transaction C: Error setting int in block1");
+                transaction_c.set_int(&block1, 0, 0, false).unwrap();
                 println!("Transaction C: receive xlock 1");
+                println!("Transaction C: sleep 1000");
                 sleep(Duration::from_millis(1000));
                 println!("Transaction C: request slock 2");
                 transaction_c.get_int(&block2, 0);
-                println!("Transaction C: receive slock 2");
+                println!("Transaction C: received slock 2");
                 transaction_c.commit().unwrap();
                 println!("Transaction C: commit");
             }

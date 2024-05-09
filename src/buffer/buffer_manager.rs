@@ -1,16 +1,15 @@
 use crate::{
     file::{block::BlockId, file_manager::FileManager},
     log::log_manager::LogManager,
+    TIMEOUT,
 };
 use anyhow::{bail, Result};
 use std::{
-    sync::{Arc, Mutex, OnceLock},
+    sync::{Arc, Mutex},
     time::SystemTime,
 };
 
 use super::buffer::Buffer;
-
-static MAX_TIME: OnceLock<u128> = OnceLock::new();
 
 pub struct BufferManager {
     buffer_pool: Vec<Arc<Mutex<Buffer>>>,
@@ -23,13 +22,6 @@ impl BufferManager {
         log_manager: Arc<Mutex<LogManager>>,
         num_buffers: u64,
     ) -> Self {
-        // NOTE: This is a hack to allow setting the MAX_TIME environment variable for testing
-        let _ = MAX_TIME.set(
-            std::env::var("MAX_TIME")
-                .unwrap_or_else(|_| "10000".to_string())
-                .parse()
-                .unwrap(),
-        );
         let mut buffer_pool = Vec::with_capacity(num_buffers as usize);
         for _ in 0..num_buffers {
             buffer_pool.push(Arc::new(Mutex::new(Buffer::new(
@@ -65,9 +57,7 @@ impl BufferManager {
         let now = SystemTime::now();
         let mut buffer = self.try_pin(block);
         while buffer.is_none() && !self.waiting_too_long(now) {
-            std::thread::sleep(std::time::Duration::from_millis(
-                *MAX_TIME.get().unwrap() as u64
-            ));
+            std::thread::sleep(TIMEOUT);
             buffer = self.try_pin(block);
         }
         let Some(buffer) = buffer else {
@@ -97,11 +87,7 @@ impl BufferManager {
     }
 
     pub fn waiting_too_long(&self, start_time: SystemTime) -> bool {
-        SystemTime::now()
-            .duration_since(start_time)
-            .unwrap()
-            .as_millis()
-            > *MAX_TIME.get().unwrap()
+        SystemTime::now().duration_since(start_time).unwrap() > TIMEOUT
     }
 
     pub fn find_existing_buffer(&self, block: &BlockId) -> Option<Arc<Mutex<Buffer>>> {

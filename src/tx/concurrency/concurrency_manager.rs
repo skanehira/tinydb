@@ -8,6 +8,7 @@ use crate::file::block::BlockId;
 
 use super::lock_table::LockTable;
 
+#[derive(Clone)]
 pub struct ConcurrencyManager {
     lock_table: Arc<Mutex<LockTable>>,
     locks: HashMap<BlockId, String>,
@@ -23,7 +24,8 @@ impl ConcurrencyManager {
 
     pub fn s_lock(&mut self, block: &BlockId) -> Result<()> {
         if !self.locks.contains_key(block) {
-            self.lock_table.lock().unwrap().s_lock(block)?;
+            let mut locked = self.lock_table.lock().unwrap();
+            locked.s_lock(block)?;
             self.locks.insert(block.clone(), "S".to_string());
         }
         Ok(())
