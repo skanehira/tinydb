@@ -1,21 +1,21 @@
-use anyhow::Result;
+use anyhow::{bail, Result};
 use std::{
     collections::HashMap,
-    sync::{Arc, Mutex},
+    sync::{Arc, Condvar, Mutex},
 };
 
-use crate::file::block::BlockId;
+use crate::{file::block::BlockId, TIMEOUT};
 
 use super::lock_table::LockTable;
 
 #[derive(Clone)]
 pub struct ConcurrencyManager {
-    lock_table: Arc<Mutex<LockTable>>,
+    lock_table: Arc<(Mutex<LockTable>, Condvar)>,
     locks: HashMap<BlockId, String>,
 }
 
 impl ConcurrencyManager {
-    pub fn new(lock_table: Arc<Mutex<LockTable>>) -> Self {
+    pub fn new(lock_table: Arc<(Mutex<LockTable>, Condvar)>) -> Self {
         Self {
             lock_table,
             locks: HashMap::new(),
@@ -24,8 +24,18 @@ impl ConcurrencyManager {
 
     pub fn s_lock(&mut self, block: &BlockId) -> Result<()> {
         if !self.locks.contains_key(block) {
-            let mut locked = self.lock_table.lock().unwrap();
-            locked.s_lock(block)?;
+            let (lock_table, cvar) = &*self.lock_table;
+            let mut locked_table = lock_table.lock().unwrap();
+
+            let start_time = std::time::Instant::now();
+
+            while locked_table.has_x_lock(block) {
+                locked_table = cvar.wait_timeout(locked_table, TIMEOUT).unwrap().0;
+                if start_time.elapsed() > TIMEOUT {
+                    bail!("Lock timeout");
+                }
+            }
+            locked_table.s_lock(block)?;
             self.locks.insert(block.clone(), "S".to_string());
         }
         Ok(())
@@ -56,17 +66,31 @@ impl ConcurrencyManager {
     pub fn x_lock(&mut self, block: &BlockId) -> Result<()> {
         if !self.has_x_lock(block) {
             self.s_lock(block)?;
-            self.lock_table.lock().unwrap().x_lock(block)?;
+            let (lock_table, cvar) = &*self.lock_table;
+            let mut locked_table = lock_table.lock().unwrap();
+            let start_time = std::time::Instant::now();
+
+            while locked_table.has_other_s_lock(block) {
+                locked_table = cvar.wait_timeout(locked_table, TIMEOUT).unwrap().0;
+                if start_time.elapsed() > TIMEOUT {
+                    bail!("Lock timeout");
+                }
+            }
+
+            locked_table.x_lock(block)?;
             self.locks.insert(block.clone(), "X".to_string());
         }
         Ok(())
     }
 
     pub fn release(&mut self) {
+        let (lock_table, cvar) = &*self.lock_table;
+        let mut locked_table = lock_table.lock().unwrap();
         for block in self.locks.keys() {
-            self.lock_table.lock().unwrap().unlock(block);
+            locked_table.unlock(block);
         }
 
+        cvar.notify_all();
         self.locks.clear();
     }
 

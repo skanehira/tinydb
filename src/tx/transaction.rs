@@ -1,7 +1,7 @@
 use anyhow::{bail, Result};
 use std::sync::{
     atomic::{AtomicI32, Ordering},
-    Arc, Mutex,
+    Arc, Condvar, Mutex,
 };
 
 use crate::{
@@ -33,7 +33,7 @@ impl Transaction {
         file_manager: Arc<Mutex<FileManager>>,
         log_manager: Arc<Mutex<LogManager>>,
         buffer_manager: Arc<Mutex<BufferManager>>,
-        lock_table: Arc<Mutex<LockTable>>,
+        lock_table: Arc<(Mutex<LockTable>, Condvar)>,
     ) -> Result<Self> {
         let tx_num = NEXT_TX_NUM.fetch_add(1, Ordering::SeqCst);
         let buffer_list = Arc::new(Mutex::new(BufferList::new(buffer_manager.clone())));

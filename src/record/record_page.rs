@@ -192,7 +192,7 @@ mod tests {
         log::log_manager::LogManager, record::schema::Schema,
         tx::concurrency::lock_table::LockTable, LOG_FILE,
     };
-    use std::path::Path;
+    use std::{path::Path, sync::Condvar};
     use tempfile::tempdir;
 
     fn new_transaction(db_dir: &Path) -> Arc<Mutex<Transaction>> {
@@ -206,7 +206,7 @@ mod tests {
             log_manager.clone(),
             10,
         )));
-        let lock_table = Arc::new(Mutex::new(LockTable::default()));
+        let lock_table = Arc::new((Mutex::new(LockTable::default()), Condvar::new()));
 
         let tx = Transaction::new(file_manager, log_manager, buffer_manager, lock_table).unwrap();
 

@@ -8,14 +8,14 @@ use crate::{
 use anyhow::Result;
 use std::{
     path::PathBuf,
-    sync::{Arc, Mutex},
+    sync::{Arc, Condvar, Mutex},
 };
 
 pub struct TinyDB {
     pub file_manager: Arc<Mutex<FileManager>>,
     pub log_manager: Arc<Mutex<LogManager>>,
     pub buffer_manager: Arc<Mutex<BufferManager>>,
-    pub lock_table: Arc<Mutex<LockTable>>,
+    pub lock_table: Arc<(Mutex<LockTable>, Condvar)>,
 }
 
 impl TinyDB {
@@ -31,7 +31,7 @@ impl TinyDB {
             log_manager.clone(),
             buffer_size,
         )));
-        let lock_table = Arc::new(Mutex::new(LockTable::default()));
+        let lock_table = Arc::new((Mutex::new(LockTable::default()), Condvar::new()));
         Ok(Self {
             file_manager,
             log_manager,
