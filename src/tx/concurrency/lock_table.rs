@@ -1,12 +1,10 @@
-use crate::file::block::BlockId;
+use crate::{file::block::BlockId, TIMEOUT};
 use anyhow::{bail, Result};
 use std::{
     collections::HashMap,
     sync::{Condvar, Mutex},
     time::SystemTime,
 };
-
-const TIMEOUT: std::time::Duration = std::time::Duration::from_millis(3000);
 
 pub struct LockTable {
     cond_var: std::sync::Condvar,
