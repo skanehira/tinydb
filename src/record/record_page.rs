@@ -9,6 +9,16 @@ pub enum RecordType {
     Used,
 }
 
+impl From<i32> for RecordType {
+    fn from(value: i32) -> Self {
+        match value {
+            0 => RecordType::Empty,
+            1 => RecordType::Used,
+            _ => panic!("invalid record type"),
+        }
+    }
+}
+
 impl From<RecordType> for i32 {
     fn from(val: RecordType) -> Self {
         match val {
@@ -50,6 +60,7 @@ impl RecordPage {
         Self { tx, block, layout }
     }
 
+    /// get_int は指定したスロットにあるフィールドの値を取得する
     pub fn get_int(&self, slot: i32, field_name: &str) -> Result<i32> {
         let field_pos = self.offset(slot)
             + self
@@ -97,6 +108,12 @@ impl RecordPage {
         self.set_record_type(slot, RecordType::Empty)
     }
 
+    /// format はレコードページを初期化する
+    /// 具体的に以下の処理をする
+    ///   - レコードタイプを Empty にする
+    ///   - 各フィールドを初期値で埋める
+    ///     - Integer の場合は 0
+    ///     - Varchar の場合は空文字
     pub fn format(&mut self) -> Result<()> {
         let mut slot = 0;
         while self.is_valid_slot(slot) {
@@ -135,10 +152,14 @@ impl RecordPage {
         Ok(())
     }
 
+    /// next_after は次の使われているスロット番号を返す
     pub fn next_after(&self, slot: i32) -> i32 {
         self.search_after(slot, RecordType::Used)
     }
 
+    /// insert_after は指定したスロットのあとに新しい空きスロットを検索して
+    /// 利用中に変更して、そのスロット番号を返す
+    /// 空きスロットがない場合は -1 を返す
     pub fn insert_after(&mut self, slot: i32) -> Result<i32> {
         let new_slot = self.search_after(slot, RecordType::Empty);
         if new_slot >= 0 {
@@ -147,12 +168,16 @@ impl RecordPage {
         Ok(new_slot)
     }
 
+    /// set_record_type は指定したスロットのレコードタイプを変更する
     fn set_record_type(&self, slot: i32, record_type: RecordType) -> Result<()> {
         let offset = self.offset(slot);
         let mut tx = self.tx.lock().unwrap();
         tx.set_int(&self.block, offset, record_type.into(), true)
     }
 
+    /// search_after は指定したスロットの次のスロットから指定したレコードタイプのスロットを検索して
+    /// スロット番号を返す
+    /// 見つからない場合は -1 を返す
     fn search_after(&self, slot: i32, record_type: RecordType) -> i32 {
         let mut slot = slot + 1;
         while self.is_valid_slot(slot) {
@@ -164,21 +189,21 @@ impl RecordPage {
         -1
     }
 
+    /// get_record_type は指定したスロットのレコードタイプを返す
     fn get_record_type(&self, block: &BlockId, slot: i32) -> RecordType {
         let offset = self.offset(slot);
         let mut tx = self.tx.lock().unwrap();
-        let record_type = tx.get_int(block, offset);
-        if record_type == 0 {
-            RecordType::Empty
-        } else {
-            RecordType::Used
-        }
+        tx.get_int(block, offset).into()
     }
 
+    /// is_valid_slot は指定したスロットが有効かどうかを返す
+    /// 有効なスロットとは、スロットの位置がブロックの範囲内に収まっているかどうか
     pub fn is_valid_slot(&self, slot: i32) -> bool {
         self.offset(slot + 1) <= self.tx.lock().unwrap().block_size()
     }
 
+    /// offset は指定したスロットのオフセットを返す
+    /// オフセットはブロックの先頭からの位置を表す
     pub fn offset(&self, slot: i32) -> i32 {
         self.layout.slot_size * slot
     }
