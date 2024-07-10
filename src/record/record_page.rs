@@ -61,6 +61,7 @@ impl RecordPage {
     }
 
     /// get_int は指定したスロットにあるフィールドの値を取得する
+    /// フィールドの位置はスロットのオフセット + フィールドのオフセットで求める
     pub fn get_int(&self, slot: i32, field_name: &str) -> Result<i32> {
         let field_pos = self.offset(slot)
             + self
