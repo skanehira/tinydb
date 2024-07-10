@@ -43,6 +43,8 @@ impl Layout {
         })
     }
 
+    /// offset は指定したフィールドのオフセットを返す
+    /// オフセットはスキーマの先頭からの位置
     pub fn offset(&self, field_name: &str) -> Option<i32> {
         self.offsets.get(field_name).copied()
     }
