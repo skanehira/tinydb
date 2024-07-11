@@ -242,8 +242,8 @@ mod tests {
     #[test]
     fn should_can_format() {
         let mut schema = Schema::default();
-        schema.add_int_field("id".into());
-        schema.add_string_field("name".into(), 8);
+        schema.add_int_field("id");
+        schema.add_string_field("name", 8);
         let schema = Arc::new(Mutex::new(schema));
         let layout = Arc::new(Layout::try_from_schema(schema.clone()).unwrap());
 
@@ -265,10 +265,10 @@ mod tests {
     }
 
     #[test]
-    fn should_can_set_record_date() {
+    fn should_can_set_record_data() {
         let mut schema = Schema::default();
-        schema.add_int_field("id".into());
-        schema.add_string_field("name".into(), 8);
+        schema.add_int_field("id");
+        schema.add_string_field("name", 8);
         let schema = Arc::new(Mutex::new(schema));
         let layout = Arc::new(Layout::try_from_schema(schema.clone()).unwrap());
 
@@ -290,8 +290,8 @@ mod tests {
     #[test]
     fn should_can_delete() {
         let mut schema = Schema::default();
-        schema.add_int_field("id".into());
-        schema.add_string_field("name".into(), 8);
+        schema.add_int_field("id");
+        schema.add_string_field("name", 8);
         let schema = Arc::new(Mutex::new(schema));
         let layout = Arc::new(Layout::try_from_schema(schema.clone()).unwrap());
 

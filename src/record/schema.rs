@@ -42,22 +42,23 @@ pub struct Schema {
 
 impl Schema {
     /// add_field はフィールド名、型、長さを追加する
-    pub fn add_field(&mut self, field_name: String, r#type: FieldTypes, length: i32) {
+    pub fn add_field(&mut self, field_name: impl Into<String>, r#type: FieldTypes, length: i32) {
         let field = FieldInto {
             r#type: r#type.into(),
             length,
         };
-        self.fields.push(field_name.clone());
-        self.info.insert(field_name, field);
+        let fname = field_name.into();
+        self.fields.push(fname.clone());
+        self.info.insert(fname, field);
     }
 
     /// add_int_field は整数型のフィールドを追加する
-    pub fn add_int_field(&mut self, field_name: String) {
+    pub fn add_int_field(&mut self, field_name: impl Into<String>) {
         self.add_field(field_name, FieldTypes::Integer, 0);
     }
 
     /// add_string_field は文字列型のフィールドを追加する
-    pub fn add_string_field(&mut self, field_name: String, length: i32) {
+    pub fn add_string_field(&mut self, field_name: impl Into<String>, length: i32) {
         self.add_field(field_name, FieldTypes::Varchar, length);
     }
 
