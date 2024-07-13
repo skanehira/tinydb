@@ -163,14 +163,20 @@ impl Transaction {
         Ok(())
     }
 
+    /// size は指定したファイルのブロック数を返す
     pub fn size(&mut self, filename: String) -> Result<u64> {
+        // 他のトランザクションが同じファイルを変更してブロック数が変わるのを防ぐため
+        // ダミーブロックを作成して共有ロックを取得する
         let dummy_block = BlockId::new(filename.clone(), -1);
         self.concurrency_manager.s_lock(&dummy_block)?;
         let mut file_manager = self.file_manager.lock().unwrap();
         file_manager.block_count(&filename)
     }
 
+    /// append は指定したファイルに新しいブロックを追加して、そのブロックのIDを返す
     pub fn append(&mut self, filename: String) -> Result<BlockId> {
+        // 複数のトランザクションが同時に同じファイルにブロックを追加するのを防ぐため
+        // ダミーブロックを作成して排他ロックを取得する
         let dummy_block = BlockId::new(filename.clone(), -1);
         self.concurrency_manager.x_lock(&dummy_block)?;
         let mut file_manager = self.file_manager.lock().unwrap();

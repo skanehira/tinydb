@@ -62,7 +62,7 @@ impl ConcurrencyManager {
     ///
     /// このようなデッドロックを検知するため、共有ロックを取得してから排他ロックを取得する
     /// 自分以外が握っている共有ロックがある場合、排他ロック時に一度タイムアウトになるまで待機する
-    /// タイムアウト後はデッドロックとして扱いエラーを返す
+    /// タイムアウト後はロック待ち失敗タイムアウトエラーを返す
     pub fn x_lock(&mut self, block: &BlockId) -> Result<()> {
         if !self.has_x_lock(block) {
             self.s_lock(block)?;

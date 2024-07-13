@@ -1,4 +1,4 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use tempfile::tempdir;
 use tinydb::file::block::BlockId;
@@ -18,10 +18,10 @@ fn record_test() {
     let mut schema = Schema::default();
     schema.add_int_field("A".to_string());
     schema.add_string_field("B".to_string(), 9);
-    let schema = Arc::new(Mutex::new(schema));
+    let schema = Arc::new(schema);
     let layout = Arc::new(Layout::try_from_schema(schema.clone()).unwrap());
 
-    for field_name in &layout.schema.lock().unwrap().fields {
+    for field_name in &layout.schema.fields {
         let offset = layout.offset(field_name).unwrap();
         println!("{} has offset {}", field_name, offset);
     }

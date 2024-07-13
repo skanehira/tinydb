@@ -1,34 +1,35 @@
 use anyhow::{anyhow, Result};
 use std::collections::HashMap;
 
-pub enum FieldTypes {
-    Integer,
-    Varchar,
-}
-
 /// From java.sql.Types
-impl From<FieldTypes> for i32 {
-    fn from(value: FieldTypes) -> i32 {
-        match value {
-            FieldTypes::Integer => 4,
-            FieldTypes::Varchar => 12,
-        }
-    }
+#[derive(Clone, Copy)]
+pub enum FieldTypes {
+    Integer = 4,
+    Varchar = 12,
 }
 
-impl From<i32> for FieldTypes {
-    fn from(value: i32) -> FieldTypes {
-        match value {
-            4 => FieldTypes::Integer,
-            12 => FieldTypes::Varchar,
-            _ => unreachable!("unknown type"),
-        }
-    }
-}
+//impl From<FieldTypes> for i32 {
+//    fn from(value: FieldTypes) -> i32 {
+//        match value {
+//            FieldTypes::Integer => 4,
+//            FieldTypes::Varchar => 12,
+//        }
+//    }
+//}
+//
+//impl From<i32> for FieldTypes {
+//    fn from(value: i32) -> FieldTypes {
+//        match value {
+//            4 => FieldTypes::Integer,
+//            12 => FieldTypes::Varchar,
+//            _ => unreachable!("unknown type"),
+//        }
+//    }
+//}
 
 #[derive(Clone, Copy)]
 pub struct FieldInto {
-    r#type: i32,
+    r#type: FieldTypes,
     length: i32,
 }
 
@@ -44,7 +45,7 @@ impl Schema {
     /// add_field はフィールド名、型、長さを追加する
     pub fn add_field(&mut self, field_name: impl Into<String>, r#type: FieldTypes, length: i32) {
         let field = FieldInto {
-            r#type: r#type.into(),
+            r#type,
             length,
         };
         let fname = field_name.into();
@@ -53,6 +54,7 @@ impl Schema {
     }
 
     /// add_int_field は整数型のフィールドを追加する
+    /// add_fieldのlengthは0だが、integer型の場合長さは固定で4バイトなので、lengthは無視される
     pub fn add_int_field(&mut self, field_name: impl Into<String>) {
         self.add_field(field_name, FieldTypes::Integer, 0);
     }
@@ -71,7 +73,7 @@ impl Schema {
         let length = schema
             .length(&field_name)
             .ok_or(anyhow!("field length not found"))?;
-        self.add_field(field_name, r#type.into(), length);
+        self.add_field(field_name, r#type, length);
         Ok(())
     }
 
@@ -88,7 +90,7 @@ impl Schema {
     }
 
     /// r#type は指定したフィールドの型を返す
-    pub fn r#type(&self, field_name: &str) -> Option<i32> {
+    pub fn r#type(&self, field_name: &str) -> Option<FieldTypes> {
         self.info.get(field_name)?.r#type.into()
     }
 
