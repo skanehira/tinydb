@@ -44,7 +44,7 @@ impl TableScan {
         self.rp.as_mut().ok_or(anyhow!("no record page"))
     }
 
-    // move_to_new_block はファイルに新しいブロックを追加
+    // move_to_new_block はファイルに新しいブロックを追加して、そのブロックに移動
     fn move_to_new_block(&mut self) -> Result<()> {
         self.close();
         let block_id = {
@@ -200,5 +200,61 @@ impl Scan for TableScan {
             self.layout.clone(),
         ));
         self.current_slot = rid.block_num;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::sync::Arc;
+
+    use super::TableScan;
+    use crate::{
+        query::scan::Scan as _,
+        record::{layout::Layout, schema::Schema},
+        server::db::TinyDB,
+    };
+    use anyhow::Result;
+    use tempfile::tempdir;
+
+    fn create_table_scan() -> Result<TableScan> {
+        let test_directory = tempdir()?;
+        let db = TinyDB::new(test_directory.path(), 100, 8)?;
+        let tx = db.transaction()?;
+
+        let mut sch = Schema::default();
+
+        // record type: 4
+        // int: 4
+        // string length: 4
+        // string : 8
+        // total: 20
+        sch.add_int_field("A");
+        sch.add_string_field("B", 8);
+
+        let layout = Layout::try_from_schema(Arc::new(sch))?;
+
+        let mut ts = TableScan::new(tx.clone(), "T", Arc::new(layout))?;
+        for n in 0..50 {
+            ts.insert()?;
+            ts.set_int("A", n)?;
+            ts.set_string("B", &format!("rec{}", n))?;
+        }
+
+        ts.before_first();
+
+        Ok(ts)
+    }
+
+    #[test]
+    fn should_can_scan_table() -> Result<()> {
+        let mut ts = create_table_scan()?;
+        assert_eq!(ts.rp.as_ref().unwrap().block.num, 0);
+
+        for i in 0..50 {
+            ts.next()?;
+            assert_eq!(ts.get_int("A")?, i);
+            assert_eq!(ts.get_string("B")?, format!("rec{}", i));
+        }
+        Ok(())
     }
 }
