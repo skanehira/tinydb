@@ -8,24 +8,24 @@ pub enum FieldTypes {
     Varchar = 12,
 }
 
-//impl From<FieldTypes> for i32 {
-//    fn from(value: FieldTypes) -> i32 {
-//        match value {
-//            FieldTypes::Integer => 4,
-//            FieldTypes::Varchar => 12,
-//        }
-//    }
-//}
-//
-//impl From<i32> for FieldTypes {
-//    fn from(value: i32) -> FieldTypes {
-//        match value {
-//            4 => FieldTypes::Integer,
-//            12 => FieldTypes::Varchar,
-//            _ => unreachable!("unknown type"),
-//        }
-//    }
-//}
+impl From<FieldTypes> for i32 {
+    fn from(value: FieldTypes) -> i32 {
+        match value {
+            FieldTypes::Integer => 4,
+            FieldTypes::Varchar => 12,
+        }
+    }
+}
+
+impl From<i32> for FieldTypes {
+    fn from(value: i32) -> FieldTypes {
+        match value {
+            4 => FieldTypes::Integer,
+            12 => FieldTypes::Varchar,
+            _ => unreachable!("unknown type"),
+        }
+    }
+}
 
 #[derive(Clone, Copy)]
 pub struct FieldInto {
@@ -44,10 +44,7 @@ pub struct Schema {
 impl Schema {
     /// add_field はフィールド名、型、長さを追加する
     pub fn add_field(&mut self, field_name: impl Into<String>, r#type: FieldTypes, length: i32) {
-        let field = FieldInto {
-            r#type,
-            length,
-        };
+        let field = FieldInto { r#type, length };
         let fname = field_name.into();
         self.fields.push(fname.clone());
         self.info.insert(fname, field);
