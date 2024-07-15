@@ -28,7 +28,7 @@ impl From<i32> for FieldTypes {
 }
 
 #[derive(Clone, Copy)]
-pub struct FieldInto {
+pub struct FieldInfo {
     r#type: FieldTypes,
     length: i32,
 }
@@ -38,13 +38,13 @@ pub struct FieldInto {
 #[derive(Default, Clone)]
 pub struct Schema {
     pub fields: Vec<String>,
-    info: HashMap<String, FieldInto>,
+    info: HashMap<String, FieldInfo>,
 }
 
 impl Schema {
     /// add_field はフィールド名、型、長さを追加する
     pub fn add_field(&mut self, field_name: impl Into<String>, r#type: FieldTypes, length: i32) {
-        let field = FieldInto { r#type, length };
+        let field = FieldInfo { r#type, length };
         let fname = field_name.into();
         self.fields.push(fname.clone());
         self.info.insert(fname, field);
