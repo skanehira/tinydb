@@ -140,7 +140,7 @@ impl Scan for TableScan {
         }
     }
 
-    fn set_val(&mut self, field_name: &str, value: crate::query::constant::Constant) -> Result<()> {
+    fn set_value(&mut self, field_name: &str, value: crate::query::constant::Constant) -> Result<()> {
         let field_type = self
             .layout
             .schema

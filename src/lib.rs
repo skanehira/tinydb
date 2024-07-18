@@ -8,6 +8,7 @@ pub mod query;
 pub mod record;
 pub mod server;
 pub mod tx;
+pub mod index;
 
 const TIMEOUT: std::time::Duration = std::time::Duration::from_secs(3);
 const I32_SIZE: usize = size_of::<i32>();

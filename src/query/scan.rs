@@ -13,7 +13,7 @@ pub trait Scan {
     fn close(&mut self);
 
     // for update scan
-    fn set_val(&mut self, field_name: &str, val: Constant) -> Result<()>;
+    fn set_value(&mut self, field_name: &str, val: Constant) -> Result<()>;
     fn set_int(&mut self, field_name: &str, val: i32) -> Result<()>;
     fn set_string(&mut self, field_name: &str, val: &str) -> Result<()>;
     fn delete(&mut self) -> Result<()>;
