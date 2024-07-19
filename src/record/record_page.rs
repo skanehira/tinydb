@@ -42,7 +42,7 @@ impl From<RecordType> for i32 {
 ///                                record
 ///                 ┏━━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━━━━━━┓
 /// ┌───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┬───┐
-/// │ 1 │ 0 │ 0 │ 0 │ 6 │ 0 │ 0 │ 0 │ h │ e │ l │ l │ o │...│...│...│...│...│...│...│...│...│...│...│...│
+/// │ 1 │ 0 │ 0 │ 0 │ 5 │ 0 │ 0 │ 0 │ h │ e │ l │ l │ o │...│...│...│...│...│...│...│...│...│...│...│...│
 /// └───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┴───┘
 /// ┗━━━━━━━┳━━━━━━━┻━━━━━━━┳━━━━━━━┻━━━━━━━━━┳━━━━━━━━━┛
 ///    record type       integer         varchar(5)
@@ -126,7 +126,7 @@ impl RecordPage {
                 false,
             )?;
 
-            let schema = &self.layout.schema.lock().unwrap();
+            let schema = &self.layout.schema;
             for field_name in &schema.fields {
                 // ブロックにあるスロットのオフセット + フィールドのオフセット = フィールドの位置
                 // フィールドのオフセット自体は変わらないが、ブロックにあるスロットの断片化を防ぐためスロットの位置が調整されることがあるため
@@ -139,7 +139,7 @@ impl RecordPage {
                 let field_type = schema
                     .r#type(field_name)
                     .ok_or_else(|| anyhow!("field type not found"))?;
-                match field_type.into() {
+                match field_type {
                     FieldTypes::Integer => {
                         tx.set_int(&self.block, field_pos, 0, false)?;
                     }
@@ -242,15 +242,16 @@ mod tests {
     #[test]
     fn should_can_format() {
         let mut schema = Schema::default();
-        schema.add_int_field("id".into());
-        schema.add_string_field("name".into(), 8);
-        let schema = Arc::new(Mutex::new(schema));
+        schema.add_int_field("id");
+        schema.add_string_field("name", 8);
+        let schema = Arc::new(schema);
         let layout = Arc::new(Layout::try_from_schema(schema.clone()).unwrap());
 
         // 4bytes: record type
         // 4bytes: id
+        // 4bytes: name length
         // 8bytes: name
-        assert_eq!(layout.slot_size, 16);
+        assert_eq!(layout.slot_size, 20);
 
         let db_dir = tempdir().unwrap();
         let tx = new_transaction(db_dir.path());
@@ -265,11 +266,11 @@ mod tests {
     }
 
     #[test]
-    fn should_can_set_record_date() {
+    fn should_can_set_record_data() {
         let mut schema = Schema::default();
-        schema.add_int_field("id".into());
-        schema.add_string_field("name".into(), 8);
-        let schema = Arc::new(Mutex::new(schema));
+        schema.add_int_field("id");
+        schema.add_string_field("name", 8);
+        let schema = Arc::new(schema);
         let layout = Arc::new(Layout::try_from_schema(schema.clone()).unwrap());
 
         let db_dir = tempdir().unwrap();
@@ -290,9 +291,9 @@ mod tests {
     #[test]
     fn should_can_delete() {
         let mut schema = Schema::default();
-        schema.add_int_field("id".into());
-        schema.add_string_field("name".into(), 8);
-        let schema = Arc::new(Mutex::new(schema));
+        schema.add_int_field("id");
+        schema.add_string_field("name", 8);
+        let schema = Arc::new(schema);
         let layout = Arc::new(Layout::try_from_schema(schema.clone()).unwrap());
 
         let db_dir = tempdir().unwrap();

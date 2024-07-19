@@ -2,7 +2,11 @@ use std::mem::size_of;
 
 pub mod buffer;
 pub mod file;
+pub mod index;
 pub mod log;
+pub mod macros;
+pub mod metadata;
+pub mod query;
 pub mod record;
 pub mod server;
 pub mod tx;

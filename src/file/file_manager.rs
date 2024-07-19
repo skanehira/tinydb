@@ -77,6 +77,7 @@ impl FileManager {
         }
     }
 
+    /// append_block 指定したファイルに新しいブロックを追加して、そのブロックのIDを返す
     pub fn append_block(&mut self, filename: &str) -> Result<BlockId> {
         let block = BlockId::new(filename.to_string(), self.block_count(filename)? as i32);
         let offset = block.num * self.block_size;
