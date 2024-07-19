@@ -3,6 +3,7 @@ use crate::{
     query::scan::Scan as _,
     record::{schema::Schema, table_scan::TableScan},
     tx::transaction::Transaction,
+    unlock,
 };
 use anyhow::Result;
 use std::sync::{Arc, Mutex};
@@ -25,10 +26,7 @@ impl ViewMgr {
             let mut sch = Schema::default();
             sch.add_string_field("viewname", MAX_NAME);
             sch.add_string_field("viewdef", max_viewdef);
-            table_manager
-                .lock()
-                .unwrap()
-                .create_table("viewcat", Arc::new(sch), tx.clone())?;
+            unlock!(table_manager).create_table("viewcat", Arc::new(sch), tx.clone())?;
         }
         Ok(Self {
             table_manager,
@@ -36,18 +34,8 @@ impl ViewMgr {
         })
     }
 
-    pub fn create_view(
-        &self,
-        vname: &str,
-        vdef: &str,
-        tx: Arc<Mutex<Transaction>>,
-    ) -> Result<()> {
-        let layout = Arc::new(
-            self.table_manager
-                .lock()
-                .unwrap()
-                .get_layout("viewcat", tx.clone())?,
-        );
+    pub fn create_view(&self, vname: &str, vdef: &str, tx: Arc<Mutex<Transaction>>) -> Result<()> {
+        let layout = Arc::new(unlock!(self.table_manager).get_layout("viewcat", tx.clone())?);
         let mut ts = TableScan::new(tx, "viewcat", layout)?;
         ts.insert()?;
         ts.set_string("viewname", vname)?;
@@ -55,17 +43,8 @@ impl ViewMgr {
         Ok(())
     }
 
-    pub fn get_view_def(
-        &self,
-        vname: &str,
-        tx: Arc<Mutex<Transaction>>,
-    ) -> Result<Option<String>> {
-        let layout = Arc::new(
-            self.table_manager
-                .lock()
-                .unwrap()
-                .get_layout("viewcat", tx.clone())?,
-        );
+    pub fn get_view_def(&self, vname: &str, tx: Arc<Mutex<Transaction>>) -> Result<Option<String>> {
+        let layout = Arc::new(unlock!(self.table_manager).get_layout("viewcat", tx.clone())?);
         let mut ts = TableScan::new(tx, "viewcat", layout)?;
         while ts.next()? {
             if ts.get_string("viewname")? == vname {

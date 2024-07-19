@@ -7,6 +7,7 @@ use crate::{
     query::scan::Scan,
     record::{layout::Layout, schema::Schema, table_scan::TableScan},
     tx::transaction::Transaction,
+    unlock,
 };
 use anyhow::Result;
 use std::{
@@ -32,18 +33,10 @@ impl IndexManager {
             schema.add_string_field("indexname", MAX_NAME);
             schema.add_string_field("tablename", MAX_NAME);
             schema.add_string_field("fieldname", MAX_NAME);
-            table_manager
-                .lock()
-                .unwrap()
-                .create_table("idxcat", Arc::new(schema), tx.clone())?;
+            unlock!(table_manager).create_table("idxcat", Arc::new(schema), tx.clone())?;
         }
 
-        let layout = Arc::new(
-            table_manager
-                .lock()
-                .unwrap()
-                .get_layout("idxcat", tx.clone())?,
-        );
+        let layout = Arc::new(unlock!(table_manager).get_layout("idxcat", tx.clone())?);
 
         Ok(Self {
             layout,
@@ -81,10 +74,7 @@ impl IndexManager {
                 let index_name = ts.get_string("indexname")?;
                 let field_name = ts.get_string("fieldname")?;
                 let table_layout = Arc::new(
-                    self.table_manager
-                        .lock()
-                        .unwrap()
-                        .get_layout(table_name.clone(), tx.clone())?,
+                    unlock!(self.table_manager).get_layout(table_name.clone(), tx.clone())?,
                 );
                 let table_stat_info = self.stat_manager.lock().unwrap().get_stat_info(
                     table_name.clone(),

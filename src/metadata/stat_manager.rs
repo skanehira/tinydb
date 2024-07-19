@@ -3,6 +3,7 @@ use crate::{
     query::scan::Scan,
     record::{layout::Layout, table_scan::TableScan},
     tx::transaction::Transaction,
+    unlock,
 };
 use anyhow::Result;
 use std::{
@@ -11,13 +12,16 @@ use std::{
 };
 
 pub struct StatManager {
-    table_manager: TableManager,
+    table_manager: Arc<Mutex<TableManager>>,
     table_stats: HashMap<String, StatInfo>,
     num_calls: i32,
 }
 
 impl StatManager {
-    pub fn new(table_manager: TableManager, tx: Arc<Mutex<Transaction>>) -> Result<Self> {
+    pub fn new(
+        table_manager: Arc<Mutex<TableManager>>,
+        tx: Arc<Mutex<Transaction>>,
+    ) -> Result<Self> {
         let table_stats = HashMap::new();
         let num_calls = 0;
         let mut sm = Self {
@@ -55,12 +59,13 @@ impl StatManager {
         self.table_stats = HashMap::new();
         self.num_calls = 0;
 
-        let table_catalog_layout = Arc::new(self.table_manager.get_layout("tblcat", tx.clone())?);
+        let table_catalog_layout =
+            Arc::new(unlock!(self.table_manager).get_layout("tblcat", tx.clone())?);
         let mut ts = TableScan::new(tx.clone(), "tblcat", table_catalog_layout)?;
 
         while ts.next()? {
             let table_name = ts.get_string("tblname")?;
-            let layout = Arc::new(self.table_manager.get_layout(&table_name, tx.clone())?);
+            let layout = Arc::new(unlock!(self.table_manager).get_layout(&table_name, tx.clone())?);
             let stat_info = self.calc_table_stats(&table_name, layout, tx.clone())?;
             self.table_stats.insert(table_name, stat_info);
         }
