@@ -2,6 +2,7 @@ use std::mem::size_of;
 
 pub mod buffer;
 pub mod file;
+pub mod index;
 pub mod log;
 pub mod metadata;
 pub mod query;
