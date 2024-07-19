@@ -10,12 +10,12 @@ use std::sync::{Arc, Mutex};
 
 static MAX_VIEWDEF: i32 = 100;
 
-pub struct ViewMgr {
+pub struct ViewManager {
     table_manager: Arc<Mutex<TableManager>>,
     max_viewdef: i32,
 }
 
-impl ViewMgr {
+impl ViewManager {
     pub fn new(
         is_new: bool,
         table_manager: Arc<Mutex<TableManager>>,
