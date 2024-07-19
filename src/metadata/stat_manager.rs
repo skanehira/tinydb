@@ -64,7 +64,6 @@ impl StatManager {
             let stat_info = self.calc_table_stats(&table_name, layout, tx.clone())?;
             self.table_stats.insert(table_name, stat_info);
         }
-        ts.close();
 
         Ok(())
     }
@@ -83,7 +82,6 @@ impl StatManager {
             num_records += 1;
             num_blocks = ts.get_rid()?.block_num + 1;
         }
-        ts.close();
 
         let stat_info = StatInfo::new(num_blocks, num_records);
         Ok(stat_info)

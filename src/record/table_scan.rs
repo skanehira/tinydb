@@ -83,6 +83,12 @@ impl TableScan {
     }
 }
 
+impl Drop for TableScan {
+    fn drop(&mut self) {
+        self.close();
+    }
+}
+
 impl Scan for TableScan {
     fn before_first(&mut self) {
         self.move_to_block(0);
@@ -140,7 +146,11 @@ impl Scan for TableScan {
         }
     }
 
-    fn set_value(&mut self, field_name: &str, value: crate::query::constant::Constant) -> Result<()> {
+    fn set_value(
+        &mut self,
+        field_name: &str,
+        value: crate::query::constant::Constant,
+    ) -> Result<()> {
         let field_type = self
             .layout
             .schema

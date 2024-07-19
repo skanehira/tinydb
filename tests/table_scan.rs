@@ -52,7 +52,6 @@ fn table_scan_test() -> Result<()> {
         let a = ts.get_int("A")?;
         assert!(a >= 25, "remaining values should be less than 25");
     }
-    ts.close();
     tx.lock().unwrap().commit()?;
     Ok(())
 }

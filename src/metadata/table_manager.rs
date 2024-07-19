@@ -10,8 +10,9 @@ use crate::{
 };
 use anyhow::Result;
 
-static MAX_NAME: i32 = 16;
+pub static MAX_NAME: i32 = 16;
 
+/// TableManager テーブルごとのメタデータを管理する
 pub struct TableManager {
     /// テーブルごとのメタデータを保持する
     /// メタデータは以下となる
@@ -68,7 +69,6 @@ impl TableManager {
         tcat.insert()?;
         tcat.set_string("tblname", &table_name)?;
         tcat.set_int("slotsize", layout.slot_size)?;
-        tcat.close();
 
         let mut fcat = TableScan::new(tx.clone(), "fldcat", self.field_catlog_layout.clone())?;
         for field_name in layout.schema.fields.iter() {
@@ -79,7 +79,6 @@ impl TableManager {
             fcat.set_int("length", layout.schema.length(field_name).unwrap())?;
             fcat.set_int("offset", layout.offset(field_name).unwrap())?;
         }
-        fcat.close();
 
         Ok(())
     }
@@ -100,7 +99,6 @@ impl TableManager {
                 break;
             }
         }
-        tcat.close();
 
         let mut schema = Schema::default();
         let mut offsets: HashMap<String, i32> = HashMap::default();
@@ -118,7 +116,6 @@ impl TableManager {
             }
         }
 
-        fcat.close();
         Layout::try_from_metadata(Arc::new(schema), offsets, size)
     }
 }
@@ -155,7 +152,6 @@ mod tests {
             assert_eq!(ts.get_string("tblname")?, want.0);
             assert_eq!(ts.get_int("slotsize")?, want.1);
         }
-        ts.close();
 
         let layout = table_manager.get_layout("fldcat", tx.clone())?;
         let mut ts = TableScan::new(tx.clone(), "fldcat", Arc::new(layout))?;
