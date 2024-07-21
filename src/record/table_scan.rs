@@ -122,7 +122,7 @@ impl Scan for TableScan {
         self.record_page()?.get_string(slot, field_name)
     }
 
-    fn get_value(&mut self, field_name: &str) -> Result<crate::query::constant::Constant> {
+    fn get_value(&mut self, field_name: &str) -> Result<Constant> {
         match self.layout.schema.r#type(field_name) {
             Some(FieldTypes::Integer) => {
                 let val = self.get_int(field_name)?;
@@ -149,7 +149,7 @@ impl Scan for TableScan {
     fn set_value(
         &mut self,
         field_name: &str,
-        value: crate::query::constant::Constant,
+        value: Constant,
     ) -> Result<()> {
         let field_type = self
             .layout
