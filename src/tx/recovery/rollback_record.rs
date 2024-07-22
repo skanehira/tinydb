@@ -1,6 +1,8 @@
 use anyhow::Result;
 
-use crate::{file::page::Page, log::log_manager::LogManager, tx::transaction::Transaction, I32_SIZE};
+use crate::{
+    file::page::Page, log::log_manager::LogManager, tx::transaction::Transaction, I32_SIZE,
+};
 
 use super::record::{LogRecord, LogRecordType};
 

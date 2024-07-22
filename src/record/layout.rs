@@ -55,7 +55,8 @@ impl Layout {
             FieldTypes::Varchar => {
                 let length = schema
                     .length(field_name)
-                    .ok_or_else(|| anyhow!("field length not found"))? as usize;
+                    .ok_or_else(|| anyhow!("field length not found"))?
+                    as usize;
                 Ok(Page::max_length(length) as i32)
             }
         }
