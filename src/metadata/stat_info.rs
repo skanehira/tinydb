@@ -1,4 +1,4 @@
-#[derive(Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct StatInfo {
     pub num_blocks: i32,
     pub num_records: i32,

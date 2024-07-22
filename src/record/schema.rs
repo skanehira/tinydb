@@ -2,7 +2,7 @@ use anyhow::{anyhow, Result};
 use std::collections::HashMap;
 
 /// From java.sql.Types
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FieldTypes {
     Integer = 4,
     Varchar = 12,
@@ -27,7 +27,7 @@ impl From<i32> for FieldTypes {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct FieldInfo {
     r#type: FieldTypes,
     length: i32,
@@ -35,7 +35,7 @@ pub struct FieldInfo {
 
 /// Schema はテーブルレコードのスキーマを表す
 /// フィールド名と型、長さを保持する
-#[derive(Default, Clone)]
+#[derive(Debug, Default, Clone)]
 pub struct Schema {
     pub fields: Vec<String>,
     info: HashMap<String, FieldInfo>,

@@ -94,3 +94,45 @@ impl StatManager {
         Ok(stat_info)
     }
 }
+
+#[cfg(test)]
+mod test {
+    use std::sync::{Arc, Mutex};
+
+    use anyhow::Result;
+    use tempfile::tempdir;
+
+    use crate::{
+        metadata::{stat_info::StatInfo, table_manager::TableManager},
+        server::db::TinyDB,
+    };
+
+    use super::StatManager;
+
+    #[test]
+    fn should_can_get_stat_info() -> Result<()> {
+        let test_directory = tempdir()?;
+        let db = TinyDB::new(test_directory.path(), 400, 8)?;
+        let tx = db.transaction()?;
+
+        let table_manager = Arc::new(Mutex::new(TableManager::new(true, tx.clone())?));
+        let mut stat_manager = StatManager::new(table_manager.clone(), tx.clone())?;
+
+        let layout = table_manager
+            .lock()
+            .unwrap()
+            .get_layout("tblcat", tx.clone())?;
+        let stat_info =
+            stat_manager.get_stat_info("tblcat".into(), Arc::new(layout), tx.clone())?;
+
+        assert_eq!(
+            stat_info,
+            StatInfo {
+                num_blocks: 1,
+                num_records: 2,
+            }
+        );
+
+        Ok(())
+    }
+}

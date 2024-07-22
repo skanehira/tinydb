@@ -42,7 +42,7 @@ impl BufferList {
         if let Some(buffer) = self.buffers.get(block) {
             self.buffer_manager.lock().unwrap().unpin(buffer.clone());
         }
-        self.pins.retain(|b| b != block);
+        self.pins.retain(|b| b.id != block.id);
         if !self.pins.contains(block) {
             self.buffers.remove(block);
         }

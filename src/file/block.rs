@@ -1,14 +1,20 @@
 use std::hash::{DefaultHasher, Hasher as _};
+use uuid::Uuid;
 
 #[derive(Default, Debug, Clone, Eq)]
 pub struct BlockId {
+    pub id: String,
     pub filename: String,
     pub num: i32,
 }
 
 impl BlockId {
     pub fn new(filename: String, num: i32) -> BlockId {
-        BlockId { filename, num }
+        BlockId {
+            id: Uuid::new_v4().to_string(),
+            filename,
+            num,
+        }
     }
 
     pub fn hash(&self) -> u64 {
