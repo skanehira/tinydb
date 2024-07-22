@@ -10,7 +10,7 @@ use crate::{
 };
 use anyhow::Result;
 
-static MAX_NAME: i32 = 16;
+pub static MAX_NAME: i32 = 16;
 
 pub struct TableManager {
     /// テーブルごとのメタデータを保持する
