@@ -18,7 +18,7 @@ use super::{
 
 static NEXT_TX_NUM: AtomicI32 = AtomicI32::new(0);
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Transaction {
     recovery_manager: Arc<Mutex<RecoveryManager>>,
     concurrency_manager: ConcurrencyManager,

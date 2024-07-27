@@ -2,7 +2,7 @@ use crate::{file::block::BlockId, TIMEOUT};
 use anyhow::{bail, Result};
 use std::{collections::HashMap, time::SystemTime};
 
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub struct LockTable {
     locks: HashMap<BlockId, i32>, // 1: S lock, -1: X lock
 }

@@ -18,6 +18,7 @@ use super::{
     start_record::StartRecord,
 };
 
+#[derive(Debug)]
 pub struct RecoveryManager {
     log_manager: Arc<Mutex<LogManager>>,
     buffer_manager: Arc<Mutex<BufferManager>>,

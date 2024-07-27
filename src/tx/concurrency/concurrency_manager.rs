@@ -8,7 +8,7 @@ use crate::{file::block::BlockId, TIMEOUT};
 
 use super::lock_table::LockTable;
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct ConcurrencyManager {
     lock_table: Arc<(Mutex<LockTable>, Condvar)>,
     locks: HashMap<BlockId, String>,

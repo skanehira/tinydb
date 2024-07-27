@@ -10,6 +10,7 @@ use crate::{
 use anyhow::{bail, Result};
 use std::sync::{Arc, Mutex};
 
+#[derive(Debug)]
 pub struct IndexInfo {
     index_name: String,
     field_name: String,
@@ -30,7 +31,7 @@ impl IndexInfo {
         let mut schema = Schema::default();
         schema.add_int_field("block");
         schema.add_int_field("id");
-        match schema.r#type(&field_name) {
+        match table_schema.r#type(&field_name) {
             Some(FieldTypes::Integer) => {
                 schema.add_int_field("dataval");
             }
@@ -68,13 +69,13 @@ impl IndexInfo {
     }
 
     pub fn records_output(&self) -> i32 {
-        self.stat_info.num_records / self.stat_info.distinct_values(self.field_name.clone())
+        self.stat_info.num_records / self.stat_info.distinct_values(&self.field_name)
     }
 
-    pub fn distinct_values(&self, field_name: String) -> i32 {
+    pub fn distinct_values(&self, field_name: &str) -> i32 {
         if field_name != self.field_name {
             return 1;
         }
-        self.stat_info.num_records / self.stat_info.distinct_values(field_name.clone())
+        self.stat_info.num_records / self.stat_info.distinct_values(field_name)
     }
 }

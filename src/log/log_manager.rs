@@ -20,7 +20,7 @@ use super::log_iter::LogIterator;
 ///                  ┗━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━┛
 ///                                    record
 /// ```
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub struct LogManager {
     file_manager: Arc<Mutex<FileManager>>,
     log_file: String,

@@ -6,7 +6,7 @@ use std::{collections::HashMap, sync::Arc};
 
 /// Layout はテーブルレコードのレイアウトを表す
 /// フィールド名と型、テーブル内の各フィールドのオフセットを保持する
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub struct Layout {
     pub schema: Arc<Schema>,
     pub offsets: HashMap<String, i32>,

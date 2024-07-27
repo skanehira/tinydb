@@ -6,7 +6,7 @@ use std::{
 
 use crate::I32_SIZE;
 
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub struct Page {
     buffer: Cursor<Vec<u8>>,
 }

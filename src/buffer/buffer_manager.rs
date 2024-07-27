@@ -11,6 +11,7 @@ use std::{
 
 use super::buffer::Buffer;
 
+#[derive(Debug)]
 pub struct BufferManager {
     buffer_pool: Vec<Arc<Mutex<Buffer>>>,
     pub num_available: u64,

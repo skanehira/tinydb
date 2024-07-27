@@ -5,7 +5,7 @@ use crate::{
     log::log_manager::LogManager,
 };
 
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub struct Buffer {
     file_manager: Arc<Mutex<FileManager>>,
     log_manager: Arc<Mutex<LogManager>>,

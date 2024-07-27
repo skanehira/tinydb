@@ -12,7 +12,7 @@ impl StatInfo {
         }
     }
 
-    pub fn distinct_values(&self, _field_name: String) -> i32 {
+    pub fn distinct_values(&self, _field_name: &str) -> i32 {
         1 + (self.num_records / 3)
     }
 }
