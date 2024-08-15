@@ -1,5 +1,5 @@
 use anyhow::{anyhow, Result};
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 
 /// From java.sql.Types
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -63,7 +63,7 @@ impl Schema {
 
     /// add はスキーマにフィールドを追加する
     /// スキーマにフィールドの定義がない場合はエラーを返す
-    pub fn add(&mut self, field_name: String, schema: &Schema) -> Result<()> {
+    pub fn add(&mut self, field_name: String, schema: Arc<Schema>) -> Result<()> {
         let r#type = schema
             .r#type(&field_name)
             .ok_or(anyhow!("field type not found"))?;
@@ -74,9 +74,9 @@ impl Schema {
         Ok(())
     }
 
-    pub fn add_all(&mut self, schema: &Schema) -> Result<()> {
+    pub fn add_all(&mut self, schema: Arc<Schema>) -> Result<()> {
         for field in &schema.fields {
-            self.add(field.clone(), schema)?
+            self.add(field.clone(), schema.clone())?
         }
         Ok(())
     }
