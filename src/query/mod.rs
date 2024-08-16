@@ -1,6 +1,16 @@
 pub mod constant;
+pub mod create_index_data;
+pub mod create_table_data;
+pub mod create_view_data;
 pub mod expression;
+pub mod insert_data;
+pub mod modify_data;
 pub mod predicate;
+pub mod product_scan;
+pub mod project_scan;
+pub mod query_data;
 pub mod scan;
 pub mod select_scan;
+pub mod statement;
 pub mod term;
+pub mod delete_data;

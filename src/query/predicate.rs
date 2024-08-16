@@ -3,7 +3,7 @@ use crate::{plan::Plan, record::schema::Schema};
 use anyhow::Result;
 use std::{fmt::Display, sync::Arc};
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, PartialEq, Eq)]
 pub struct Predicate {
     terms: Vec<Term>,
 }

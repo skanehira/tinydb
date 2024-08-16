@@ -1,7 +1,4 @@
-use super::{
-    predicate::Predicate,
-    scan::{Scan, UpdateScan},
-};
+use super::scan::{Scan, UpdateScan};
 use anyhow::{bail, Result};
 
 pub struct ProjectScan {

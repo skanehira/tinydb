@@ -3,7 +3,7 @@ use crate::{plan::Plan, record::schema::Schema};
 use anyhow::Result;
 use std::{cmp, fmt::Display, sync::Arc};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Term {
     lhs: Expression,
     rhs: Expression,

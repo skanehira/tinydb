@@ -3,7 +3,7 @@ use crate::record::schema::Schema;
 use anyhow::Result;
 use std::{fmt::Display, sync::Arc};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Expression {
     Value(Constant),
     FieldName(String),

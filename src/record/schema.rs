@@ -27,7 +27,7 @@ impl From<i32> for FieldTypes {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct FieldInfo {
     r#type: FieldTypes,
     length: i32,
@@ -35,7 +35,7 @@ pub struct FieldInfo {
 
 /// Schema はテーブルレコードのスキーマを表す
 /// フィールド名と型、長さを保持する
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct Schema {
     pub fields: Vec<String>,
     info: HashMap<String, FieldInfo>,

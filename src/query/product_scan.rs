@@ -1,8 +1,5 @@
-use super::{
-    predicate::Predicate,
-    scan::{Scan, UpdateScan},
-};
-use anyhow::{bail, Result};
+use super::scan::{Scan, UpdateScan};
+use anyhow::Result;
 
 pub struct ProductScan {
     scan1: Box<dyn UpdateScan>,
@@ -18,13 +15,13 @@ impl ProductScan {
 impl Scan for ProductScan {
     fn before_first(&mut self) {
         self.scan1.before_first();
-        self.scan1.next();
+        let _ = self.scan1.next();
         self.scan2.before_first();
     }
 
     fn next(&mut self) -> Result<bool> {
-        if (self.scan2.next()?) {
-            return Ok(true);
+        if self.scan2.next()? {
+            Ok(true)
         } else {
             self.scan2.before_first();
             Ok(self.scan1.next()? && self.scan1.next()?)
@@ -56,7 +53,7 @@ impl Scan for ProductScan {
     }
 
     fn has_field(&self, field_name: &str) -> bool {
-        self.scan1.has_field(&field_name.into()) || self.scan2.has_field(field_name)
+        self.scan1.has_field(field_name) || self.scan2.has_field(field_name)
     }
 
     fn close(&mut self) {

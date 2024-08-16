@@ -6,6 +6,8 @@ pub mod index;
 pub mod log;
 pub mod macros;
 pub mod metadata;
+pub mod parse;
+pub mod plan;
 pub mod query;
 pub mod record;
 pub mod server;
