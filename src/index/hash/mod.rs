@@ -1,6 +1,6 @@
 use super::Index;
 use crate::{
-    query::{constant::Constant, scan::Scan as _},
+    query::{constant::Constant, scan::{Scan as _, UpdateScan as _}},
     record::{layout::Layout, rid::RID, table_scan::TableScan},
     tx::transaction::Transaction,
 };

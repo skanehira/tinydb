@@ -1,7 +1,10 @@
 use super::{record_page::RecordPage, rid::RID, schema::FieldTypes};
 use crate::{
     file::block::BlockId,
-    query::{constant::Constant, scan::Scan},
+    query::{
+        constant::Constant,
+        scan::{Scan, UpdateScan},
+    },
     record::layout::Layout,
     tx::transaction::Transaction,
 };
@@ -139,7 +142,9 @@ impl Scan for TableScan {
             self.tx.lock().unwrap().unpin(&rp.block);
         }
     }
+}
 
+impl UpdateScan for TableScan {
     fn set_value(&mut self, field_name: &str, value: Constant) -> Result<()> {
         let field_type = self
             .layout
@@ -201,6 +206,10 @@ impl Scan for TableScan {
         ));
         self.current_slot = rid.block_num;
     }
+
+    fn as_scan(&mut self) -> &mut dyn Scan {
+        self
+    }
 }
 
 #[cfg(test)]
@@ -209,7 +218,7 @@ mod tests {
 
     use super::TableScan;
     use crate::{
-        query::scan::Scan as _,
+        query::scan::{Scan as _, UpdateScan as _},
         record::{layout::Layout, schema::Schema},
         server::db::TinyDB,
     };

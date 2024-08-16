@@ -3,7 +3,7 @@ use std::sync::Arc;
 use anyhow::Result;
 use tempfile::tempdir;
 use tinydb::{
-    query::scan::Scan as _,
+    query::scan::{Scan as _, UpdateScan as _},
     record::{layout::Layout, schema::Schema, table_scan::TableScan},
     server::db::TinyDB,
 };

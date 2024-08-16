@@ -1,6 +1,6 @@
 use super::table_manager::{TableManager, MAX_NAME};
 use crate::{
-    query::scan::Scan as _,
+    query::scan::{Scan as _, UpdateScan as _},
     record::{schema::Schema, table_scan::TableScan},
     tx::transaction::Transaction,
     unlock,

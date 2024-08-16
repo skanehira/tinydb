@@ -43,7 +43,7 @@ impl Expression {
         }
     }
 
-    pub fn evaluate(&self, scan: &mut impl Scan) -> Result<Constant> {
+    pub fn evaluate(&self, scan: &mut dyn Scan) -> Result<Constant> {
         match self {
             Expression::Value(value) => Ok(value.clone()),
             Expression::FieldName(field_name) => scan.get_value(field_name),

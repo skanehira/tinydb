@@ -14,7 +14,7 @@ impl Term {
         Self { lhs, rhs }
     }
 
-    pub fn is_satisfied(&self, scan: &mut impl Scan) -> Result<bool> {
+    pub fn is_satisfied(&self, scan: &mut dyn Scan) -> Result<bool> {
         let lhs_value = self.lhs.evaluate(scan)?;
         let rhs_value = self.rhs.evaluate(scan)?;
         Ok(lhs_value == rhs_value)

@@ -1,6 +1,6 @@
 use super::{stat_info::StatInfo, table_manager::TableManager};
 use crate::{
-    query::scan::Scan,
+    query::scan::{Scan, UpdateScan as _},
     record::{layout::Layout, table_scan::TableScan},
     tx::transaction::Transaction,
     unlock,

@@ -17,7 +17,7 @@ impl Predicate {
         self.terms.extend(pred.terms.clone());
     }
 
-    pub fn is_satisfield(&mut self, scan: &mut impl Scan) -> Result<bool> {
+    pub fn is_satisfied(&mut self, scan: &mut dyn Scan) -> Result<bool> {
         for term in self.terms.iter() {
             if !term.is_satisfied(scan)? {
                 return Ok(false);

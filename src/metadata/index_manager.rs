@@ -4,7 +4,7 @@ use super::{
     table_manager::{TableManager, MAX_NAME},
 };
 use crate::{
-    query::scan::Scan,
+    query::scan::{Scan, UpdateScan as _},
     record::{layout::Layout, schema::Schema, table_scan::TableScan},
     tx::transaction::Transaction,
     unlock,
