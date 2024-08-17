@@ -1,29 +1,34 @@
-use super::scan::{Scan, UpdateScan};
+use crate::unlock;
+
+use super::scan::{ArcScan, Scan};
 use anyhow::{bail, Result};
 
 pub struct ProjectScan {
-    scan: Box<dyn UpdateScan>,
+    scan: ArcScan,
     fields: Vec<String>,
 }
 
 impl ProjectScan {
-    pub fn new(scan: Box<dyn UpdateScan>, fields: Vec<String>) -> ProjectScan {
+    pub fn new(scan: ArcScan, fields: Vec<String>) -> ProjectScan {
         ProjectScan { scan, fields }
     }
 }
 
+unsafe impl Send for ProjectScan {}
+unsafe impl Sync for ProjectScan {}
+
 impl Scan for ProjectScan {
     fn before_first(&mut self) {
-        self.scan.before_first();
+        unlock!(self.scan).before_first();
     }
 
     fn next(&mut self) -> Result<bool> {
-        self.scan.next()
+        unlock!(self.scan).next()
     }
 
     fn get_int(&mut self, field_name: &str) -> Result<i32> {
         if self.has_field(field_name) {
-            self.scan.get_int(field_name)
+            unlock!(self.scan).get_int(field_name)
         } else {
             bail!("field not found: {}", field_name);
         }
@@ -31,7 +36,7 @@ impl Scan for ProjectScan {
 
     fn get_string(&mut self, field_name: &str) -> Result<String> {
         if self.has_field(field_name) {
-            self.scan.get_string(field_name)
+            unlock!(self.scan).get_string(field_name)
         } else {
             bail!("field not found: {}", field_name);
         }
@@ -39,7 +44,7 @@ impl Scan for ProjectScan {
 
     fn get_value(&mut self, fieldname: &str) -> Result<super::constant::Constant> {
         if self.has_field(fieldname) {
-            self.scan.get_value(fieldname)
+            unlock!(self.scan).get_value(fieldname)
         } else {
             bail!("field not found: {}", fieldname);
         }
@@ -50,6 +55,6 @@ impl Scan for ProjectScan {
     }
 
     fn close(&mut self) {
-        self.scan.close();
+        unlock!(self.scan).close();
     }
 }

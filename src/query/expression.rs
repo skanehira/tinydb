@@ -1,5 +1,5 @@
-use super::{constant::Constant, scan::Scan};
-use crate::record::schema::Schema;
+use super::{constant::Constant, scan::ArcScan};
+use crate::{record::schema::Schema, unlock};
 use anyhow::Result;
 use std::{fmt::Display, sync::Arc};
 
@@ -43,10 +43,10 @@ impl Expression {
         }
     }
 
-    pub fn evaluate(&self, scan: &mut dyn Scan) -> Result<Constant> {
+    pub fn evaluate(&self, scan: ArcScan) -> Result<Constant> {
         match self {
             Expression::Value(value) => Ok(value.clone()),
-            Expression::FieldName(field_name) => scan.get_value(field_name),
+            Expression::FieldName(field_name) => unlock!(scan).get_value(field_name),
         }
     }
 }

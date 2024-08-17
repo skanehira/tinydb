@@ -1,9 +1,9 @@
-use super::{constant::Constant, scan::Scan, term::Term};
-use crate::{plan::Plan, record::schema::Schema};
+use super::{constant::Constant, scan::ArcScan, term::Term};
+use crate::{plan::ArcPlan, record::schema::Schema};
 use anyhow::Result;
 use std::{fmt::Display, sync::Arc};
 
-#[derive(Default, Debug, PartialEq, Eq)]
+#[derive(Default, Debug, Clone, PartialEq, Eq)]
 pub struct Predicate {
     terms: Vec<Term>,
 }
@@ -17,19 +17,19 @@ impl Predicate {
         self.terms.extend(pred.terms.clone());
     }
 
-    pub fn is_satisfied(&mut self, scan: &mut dyn Scan) -> Result<bool> {
+    pub fn is_satisfied(&mut self, scan: ArcScan) -> Result<bool> {
         for term in self.terms.iter() {
-            if !term.is_satisfied(scan)? {
+            if !term.is_satisfied(scan.clone())? {
                 return Ok(false);
             }
         }
         Ok(true)
     }
 
-    pub fn reduction_factor(&self, plan: &mut impl Plan) -> i32 {
+    pub fn reduction_factor(&self, plan: ArcPlan) -> i32 {
         self.terms
             .iter()
-            .map(|term| term.reduction_factor(plan))
+            .map(|term| term.reduction_factor(plan.clone()))
             .sum()
     }
 

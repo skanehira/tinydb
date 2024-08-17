@@ -92,7 +92,7 @@ impl MetadataManager {
 
     pub fn get_stat_info(
         &self,
-        table_name: String,
+        table_name: &str,
         layout: Arc<Layout>,
         tx: Arc<Mutex<Transaction>>,
     ) -> Result<StatInfo> {

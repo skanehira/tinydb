@@ -4,7 +4,7 @@ use super::{
     table_manager::{TableManager, MAX_NAME},
 };
 use crate::{
-    query::scan::{Scan, UpdateScan as _},
+    query::scan::Scan,
     record::{layout::Layout, schema::Schema, table_scan::TableScan},
     tx::transaction::Transaction,
     unlock,
@@ -76,7 +76,7 @@ impl IndexManager {
                 let table_layout =
                     Arc::new(unlock!(self.table_manager).get_layout(table_name, tx.clone())?);
                 let table_stat_info = self.stat_manager.lock().unwrap().get_stat_info(
-                    table_name.into(),
+                    table_name,
                     table_layout.clone(),
                     tx.clone(),
                 )?;

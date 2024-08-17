@@ -1,5 +1,5 @@
-use super::{constant::Constant, expression::Expression, scan::Scan};
-use crate::{plan::Plan, record::schema::Schema};
+use super::{constant::Constant, expression::Expression, scan::ArcScan};
+use crate::{plan::ArcPlan, record::schema::Schema, unlock};
 use anyhow::Result;
 use std::{cmp, fmt::Display, sync::Arc};
 
@@ -14,21 +14,21 @@ impl Term {
         Self { lhs, rhs }
     }
 
-    pub fn is_satisfied(&self, scan: &mut dyn Scan) -> Result<bool> {
-        let lhs_value = self.lhs.evaluate(scan)?;
+    pub fn is_satisfied(&self, scan: ArcScan) -> Result<bool> {
+        let lhs_value = self.lhs.evaluate(scan.clone())?;
         let rhs_value = self.rhs.evaluate(scan)?;
         Ok(lhs_value == rhs_value)
     }
 
-    pub fn reduction_factor(&self, plan: &mut impl Plan) -> i32 {
+    pub fn reduction_factor(&self, plan: ArcPlan) -> i32 {
         match (&self.lhs, &self.rhs) {
             (Expression::FieldName(l), Expression::FieldName(r)) => {
-                let l_values = plan.distinct_values(l);
-                let r_values = plan.distinct_values(r);
+                let l_values = unlock!(plan).distinct_values(l);
+                let r_values = unlock!(plan).distinct_values(r);
                 cmp::min(l_values, r_values)
             }
-            (Expression::FieldName(l), _) => plan.distinct_values(l),
-            (_, Expression::FieldName(r)) => plan.distinct_values(r),
+            (Expression::FieldName(l), _) => unlock!(plan).distinct_values(l),
+            (_, Expression::FieldName(r)) => unlock!(plan).distinct_values(r),
             (Expression::Value(l), Expression::Value(r)) => {
                 if l == r {
                     1

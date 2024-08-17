@@ -1,6 +1,6 @@
 use super::{stat_info::StatInfo, table_manager::TableManager};
 use crate::{
-    query::scan::{Scan, UpdateScan as _},
+    query::scan::Scan,
     record::{layout::Layout, table_scan::TableScan},
     tx::transaction::Transaction,
     unlock,
@@ -37,7 +37,7 @@ impl StatManager {
 
     pub fn get_stat_info(
         &mut self,
-        table_name: String,
+        table_name: &str,
         layout: Arc<Layout>,
         tx: Arc<Mutex<Transaction>>,
     ) -> Result<StatInfo> {
@@ -45,11 +45,12 @@ impl StatManager {
         if self.num_calls > 100 {
             self.refresh_statistics(tx.clone())?;
         }
-        match self.table_stats.get(&table_name) {
+        match self.table_stats.get(table_name) {
             Some(stat_info) => Ok(stat_info.clone()),
             None => {
-                let stat_info = self.calc_table_stats(&table_name, layout, tx.clone())?;
-                self.table_stats.insert(table_name, stat_info.clone());
+                let stat_info = self.calc_table_stats(table_name, layout, tx.clone())?;
+                self.table_stats
+                    .insert(table_name.to_string(), stat_info.clone());
                 Ok(stat_info)
             }
         }
