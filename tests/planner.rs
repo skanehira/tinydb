@@ -22,13 +22,31 @@ fn test_planner() -> Result<()> {
     let query = "select B from T where A = 10";
     let plan = planner.create_query_plan(query, tx.clone())?;
     let mut plan = unlock!(plan);
-
     let scan = plan.open()?;
     let mut scan = unlock!(scan);
-
     scan.next()?;
     let b = scan.get_string("B")?;
     assert_eq!(b, "rec10");
+
+    let query = "update T set B = 'updated' where A = 10";
+    planner.execute_update(query, tx.clone())?;
+    let query = "select B from T where A = 10";
+    let plan = planner.create_query_plan(query, tx.clone())?;
+    let mut plan = unlock!(plan);
+    let scan = plan.open()?;
+    let mut scan = unlock!(scan);
+    scan.next()?;
+    let b = scan.get_string("B")?;
+    assert_eq!(b, "updated");
+
+    let query = "delete from T where A = 10";
+    planner.execute_update(query, tx.clone())?;
+    let query = "select B from T where A = 10";
+    let plan = planner.create_query_plan(query, tx.clone())?;
+    let mut plan = unlock!(plan);
+    let scan = plan.open()?;
+    let mut scan = unlock!(scan);
+    assert!(!scan.next()?);
 
     unlock!(tx).commit()?;
 
