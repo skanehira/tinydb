@@ -15,18 +15,18 @@ use std::sync::{Arc, Mutex};
 use super::{update_planner::UpdatePlanner, ArcPlan};
 
 pub struct BasicUpdatePlanner {
-    metadata_manager: MetadataManager,
+    metadata_manager: Arc<Mutex<MetadataManager>>,
 }
 
 impl BasicUpdatePlanner {
-    pub fn new(metadata_manager: MetadataManager) -> Self {
+    pub fn new(metadata_manager: Arc<Mutex<MetadataManager>>) -> Self {
         Self { metadata_manager }
     }
 }
 
 impl UpdatePlanner for BasicUpdatePlanner {
     fn execute_insert(&mut self, data: InsertData, tx: Arc<Mutex<Transaction>>) -> Result<i32> {
-        let mut plan = TablePlan::new(data.table_name.clone(), tx, &mut self.metadata_manager)?;
+        let mut plan = TablePlan::new(data.table_name.clone(), tx, self.metadata_manager.clone())?;
         let scan = plan.open()?;
         let mut scan = unlock!(scan);
         scan.insert()?;
@@ -41,7 +41,7 @@ impl UpdatePlanner for BasicUpdatePlanner {
         let plan = Arc::new(Mutex::new(TablePlan::new(
             data.table_name.clone(),
             tx,
-            &mut self.metadata_manager,
+            self.metadata_manager.clone(),
         )?)) as ArcPlan;
         let mut plan = SelectPlan::new(plan, data.pred.clone());
         let scan = plan.open()?;
@@ -58,7 +58,7 @@ impl UpdatePlanner for BasicUpdatePlanner {
         let plan = Arc::new(Mutex::new(TablePlan::new(
             data.table_name.clone(),
             tx,
-            &mut self.metadata_manager,
+            self.metadata_manager.clone(),
         )?)) as ArcPlan;
         let mut plan = SelectPlan::new(plan, data.pred.clone());
         let scan = plan.open()?;
@@ -77,8 +77,7 @@ impl UpdatePlanner for BasicUpdatePlanner {
         data: CreateTableData,
         tx: Arc<Mutex<Transaction>>,
     ) -> Result<i32> {
-        self.metadata_manager
-            .create_table(&data.table_name, Arc::new(data.schema), tx)?;
+        unlock!(self.metadata_manager).create_table(&data.table_name, Arc::new(data.schema), tx)?;
         Ok(0)
     }
 
@@ -87,8 +86,7 @@ impl UpdatePlanner for BasicUpdatePlanner {
         data: CreateViewData,
         tx: Arc<Mutex<Transaction>>,
     ) -> Result<i32> {
-        self.metadata_manager
-            .create_view(&data.view_name, &data.view_def(), tx)?;
+        unlock!(self.metadata_manager).create_view(&data.view_name, &data.view_def(), tx)?;
         Ok(0)
     }
 
@@ -97,7 +95,7 @@ impl UpdatePlanner for BasicUpdatePlanner {
         data: CreateIndexData,
         tx: Arc<Mutex<Transaction>>,
     ) -> Result<i32> {
-        self.metadata_manager.create_index(
+        unlock!(self.metadata_manager).create_index(
             &data.index_name,
             &data.table_name,
             &data.field_name,

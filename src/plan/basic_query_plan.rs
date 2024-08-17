@@ -8,16 +8,17 @@ use crate::{
     },
     query::query_data::QueryData,
     tx::transaction::Transaction,
+    unlock,
 };
 use anyhow::Result;
 use std::sync::{Arc, Mutex};
 
 pub struct BasicQueryPlanner {
-    metadata_manager: MetadataManager,
+    metadata_manager: Arc<Mutex<MetadataManager>>,
 }
 
 impl BasicQueryPlanner {
-    pub fn new(metadata_manager: MetadataManager) -> Self {
+    pub fn new(metadata_manager: Arc<Mutex<MetadataManager>>) -> Self {
         Self { metadata_manager }
     }
 }
@@ -31,15 +32,13 @@ impl QueryPlanner for BasicQueryPlanner {
         let mut plans = vec![];
 
         for table_name in data.tables {
-            if let Some(view_def) = self
-                .metadata_manager
-                .get_view_def(&table_name, tx.clone())?
-            {
+            let view_def = unlock!(self.metadata_manager).get_view_def(&table_name, tx.clone())?;
+            if let Some(view_def) = view_def {
                 let mut parser = Parser::new(&view_def);
                 let view_data = parser.query()?;
                 plans.push(self.create_plan(view_data, tx.clone())?);
             } else {
-                let plan = TablePlan::new(table_name, tx.clone(), &mut self.metadata_manager)?;
+                let plan = TablePlan::new(table_name, tx.clone(), self.metadata_manager.clone())?;
                 plans.push(Arc::new(Mutex::new(plan)) as ArcPlan);
             }
         }

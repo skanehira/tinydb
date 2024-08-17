@@ -123,8 +123,7 @@ mod test {
             .lock()
             .unwrap()
             .get_layout("tblcat", tx.clone())?;
-        let stat_info =
-            stat_manager.get_stat_info("tblcat".into(), Arc::new(layout), tx.clone())?;
+        let stat_info = stat_manager.get_stat_info("tblcat", Arc::new(layout), tx.clone())?;
 
         assert_eq!(
             stat_info,

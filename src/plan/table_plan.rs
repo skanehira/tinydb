@@ -1,14 +1,13 @@
-use anyhow::Result;
-use std::sync::{Arc, Mutex};
-
+use super::Plan;
 use crate::{
     metadata::{metadata_manager::MetadataManager, stat_info::StatInfo},
     query::scan::ArcScan,
     record::{layout::Layout, schema::Schema, table_scan::TableScan},
     tx::transaction::Transaction,
+    unlock,
 };
-
-use super::Plan;
+use anyhow::Result;
+use std::sync::{Arc, Mutex};
 
 pub struct TablePlan {
     table_name: String,
@@ -21,10 +20,10 @@ impl TablePlan {
     pub fn new(
         table_name: String,
         tx: Arc<Mutex<Transaction>>,
-        md: &mut MetadataManager,
+        md: Arc<Mutex<MetadataManager>>,
     ) -> Result<Self> {
-        let layout = Arc::new(md.get_layout(&table_name, tx.clone())?);
-        let stat_info = md.get_stat_info(&table_name, layout.clone(), tx.clone())?;
+        let layout = Arc::new(unlock!(md).get_layout(&table_name, tx.clone())?);
+        let stat_info = unlock!(md).get_stat_info(&table_name, layout.clone(), tx.clone())?;
         Ok(Self {
             table_name,
             tx,

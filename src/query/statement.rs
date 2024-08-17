@@ -1,7 +1,7 @@
 use super::{
     create_index_data::CreateIndexData, create_table_data::CreateTableData,
     create_view_data::CreateViewData, delete_data::DeleteData, insert_data::InsertData,
-    modify_data::ModifyData, query_data::QueryData,
+    modify_data::ModifyData,
 };
 
 pub enum CreateStatement {
@@ -11,7 +11,6 @@ pub enum CreateStatement {
 }
 
 pub enum Statement {
-    Select(QueryData),
     Create(CreateStatement),
     Insert(InsertData),
     Update(ModifyData),
