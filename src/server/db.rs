@@ -21,7 +21,7 @@ pub struct TinyDB {
     pub log_manager: Arc<Mutex<LogManager>>,
     pub buffer_manager: Arc<Mutex<BufferManager>>,
     pub lock_table: Arc<(Mutex<LockTable>, Condvar)>,
-    pub planner: Arc<Mutex<Planner>>,
+    pub planner: Option<Arc<Mutex<Planner>>>,
 }
 
 impl TinyDB {
@@ -39,14 +39,24 @@ impl TinyDB {
         )));
         let lock_table = Arc::new((Mutex::new(LockTable::default()), Condvar::new()));
 
+        Ok(Self {
+            file_manager,
+            log_manager,
+            buffer_manager,
+            lock_table,
+            planner: None,
+        })
+    }
+
+    pub fn init_planner(&mut self) -> Result<()> {
         let tx = Arc::new(Mutex::new(Transaction::new(
-            file_manager.clone(),
-            log_manager.clone(),
-            buffer_manager.clone(),
-            lock_table.clone(),
+            self.file_manager.clone(),
+            self.log_manager.clone(),
+            self.buffer_manager.clone(),
+            self.lock_table.clone(),
         )?));
 
-        let is_new = unlock!(file_manager).is_new;
+        let is_new = unlock!(self.file_manager).is_new;
         if !is_new {
             unlock!(tx).recover()?;
         }
@@ -62,13 +72,8 @@ impl TinyDB {
 
         unlock!(tx).commit()?;
 
-        Ok(Self {
-            file_manager,
-            log_manager,
-            buffer_manager,
-            lock_table,
-            planner,
-        })
+        self.planner = Some(planner);
+        Ok(())
     }
 
     pub fn transaction(&self) -> Result<Arc<Mutex<Transaction>>> {

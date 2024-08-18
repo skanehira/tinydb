@@ -1,6 +1,8 @@
+use super::{
+    constant::Constant,
+    scan::{ArcScan, Scan},
+};
 use crate::unlock;
-
-use super::scan::{ArcScan, Scan};
 use anyhow::{bail, Result};
 
 pub struct ProjectScan {
@@ -42,7 +44,7 @@ impl Scan for ProjectScan {
         }
     }
 
-    fn get_value(&mut self, fieldname: &str) -> Result<super::constant::Constant> {
+    fn get_value(&mut self, fieldname: &str) -> Result<Constant> {
         if self.has_field(fieldname) {
             unlock!(self.scan).get_value(fieldname)
         } else {

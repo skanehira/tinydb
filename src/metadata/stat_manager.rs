@@ -98,23 +98,40 @@ impl StatManager {
 
 #[cfg(test)]
 mod test {
-    use std::sync::{Arc, Mutex};
-
-    use anyhow::Result;
-    use tempfile::tempdir;
-
-    use crate::{
-        metadata::{stat_info::StatInfo, table_manager::TableManager},
-        server::db::TinyDB,
-    };
-
     use super::StatManager;
+    use crate::{
+        buffer::buffer_manager::BufferManager,
+        file::file_manager::FileManager,
+        log::log_manager::LogManager,
+        metadata::{stat_info::StatInfo, table_manager::TableManager},
+        tx::{concurrency::lock_table::LockTable, transaction::Transaction},
+        LOG_FILE,
+    };
+    use anyhow::Result;
+    use std::sync::{Arc, Condvar, Mutex};
+    use tempfile::tempdir;
 
     #[test]
     fn should_can_get_stat_info() -> Result<()> {
-        let test_directory = tempdir()?;
-        let db = TinyDB::new(test_directory.path(), 400, 8)?;
-        let tx = db.transaction()?;
+        let db_dir = tempdir()?.path().join("should_can_get_stat_info");
+        let file_manager = Arc::new(Mutex::new(FileManager::new(db_dir, 400)?));
+        let log_manager = Arc::new(Mutex::new(LogManager::new(
+            file_manager.clone(),
+            LOG_FILE.into(),
+        )?));
+        let buffer_manager = Arc::new(Mutex::new(BufferManager::new(
+            file_manager.clone(),
+            log_manager.clone(),
+            8,
+        )));
+        let lock_table = Arc::new((Mutex::new(LockTable::default()), Condvar::new()));
+
+        let tx = Arc::new(Mutex::new(Transaction::new(
+            file_manager,
+            log_manager,
+            buffer_manager,
+            lock_table,
+        )?));
 
         let table_manager = Arc::new(Mutex::new(TableManager::new(true, tx.clone())?));
         let mut stat_manager = StatManager::new(table_manager.clone(), tx.clone())?;

@@ -5,11 +5,11 @@ use tinydb::{server::db::TinyDB, unlock};
 #[test]
 fn test_planner() -> Result<()> {
     let test_directory = tempdir()?.path().join("test_planner");
-    let db = TinyDB::new(test_directory, 400, 8)?;
+    let mut db = TinyDB::new(test_directory, 400, 8)?;
+    db.init_planner()?;
     let tx = db.transaction()?;
-    let planner = db.planner;
-
     let query = "create table T(A int, B varchar(9))";
+    let planner = db.planner.unwrap();
     let mut planner = unlock!(planner);
     planner.execute_update(query, tx.clone())?;
 

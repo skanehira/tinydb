@@ -9,8 +9,8 @@ use tinydb::server::db::TinyDB;
 
 #[test]
 fn record_test() {
-    let test_directory = tempdir().unwrap();
-    let db = TinyDB::new(test_directory.path(), 400, 8).unwrap();
+    let test_directory = tempdir().unwrap().path().join("record_test");
+    let db = TinyDB::new(test_directory, 400, 8).unwrap();
 
     let transaction = db.transaction().unwrap();
 

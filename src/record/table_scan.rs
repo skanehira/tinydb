@@ -217,8 +217,8 @@ mod tests {
     use tempfile::tempdir;
 
     fn create_table_scan() -> Result<TableScan> {
-        let test_directory = tempdir()?;
-        let db = TinyDB::new(test_directory.path(), 100, 8)?;
+        let test_directory = tempdir()?.path().join("create_table_scan");
+        let db = TinyDB::new(test_directory, 100, 8)?;
         let tx = db.transaction()?;
 
         let mut sch = Schema::default();

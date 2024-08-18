@@ -38,8 +38,8 @@ use tinydb::{file::block::BlockId, server::db::TinyDB, tx::transaction::Transact
 /// 上記の時系列で動くため、デッドロックは発生しない
 #[test]
 fn concurrency_test() {
-    let test_directory = tempdir().unwrap();
-    let db = TinyDB::new(test_directory.path(), 400, 8).unwrap();
+    let test_directory = tempdir().unwrap().path().join("concurrency_test");
+    let db = TinyDB::new(test_directory, 400, 8).unwrap();
     let file_manager = db.file_manager;
     let log_manager = db.log_manager;
     let buffer_manager = db.buffer_manager;

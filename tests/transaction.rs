@@ -3,8 +3,8 @@ use tinydb::{file::block::BlockId, server::db::TinyDB, tx::transaction::Transact
 
 #[test]
 fn tx_test() {
-    let test_directory = tempdir().unwrap();
-    let db = TinyDB::new(test_directory.path(), 400, 8).unwrap();
+    let test_directory = tempdir().unwrap().path().join("tx_test");
+    let db = TinyDB::new(test_directory, 400, 8).unwrap();
     let file_manager = db.file_manager;
     let log_manager = db.log_manager;
     let buffer_manager = db.buffer_manager;

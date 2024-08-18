@@ -10,8 +10,8 @@ use tinydb::{
 
 #[test]
 fn table_scan_test() -> Result<()> {
-    let test_directory = tempdir()?;
-    let db = TinyDB::new(test_directory.path(), 400, 8)?;
+    let test_directory = tempdir()?.path().join("table_scan_test");
+    let db = TinyDB::new(test_directory, 400, 8)?;
     let tx = db.transaction()?;
 
     let mut sch = Schema::default();

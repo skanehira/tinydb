@@ -58,22 +58,21 @@ impl TableManager {
 
     pub fn create_table(
         &mut self,
-        table_name: impl Into<String>,
+        table_name: &str,
         schema: Arc<Schema>,
         tx: Arc<Mutex<Transaction>>,
     ) -> Result<()> {
-        let table_name = table_name.into();
         let layout = Arc::new(Layout::try_from_schema(schema)?);
         let mut tcat = TableScan::new(tx.clone(), "tblcat", self.table_catlog_layout.clone())?;
         tcat.insert()?;
-        tcat.set_string("tblname", &table_name)?;
+        tcat.set_string("tblname", table_name)?;
         tcat.set_int("slotsize", layout.slot_size)?;
         tcat.close();
 
         let mut fcat = TableScan::new(tx.clone(), "fldcat", self.field_catlog_layout.clone())?;
         for field_name in layout.schema.fields.iter() {
             fcat.insert()?;
-            fcat.set_string("tblname", &table_name)?;
+            fcat.set_string("tblname", table_name)?;
             fcat.set_string("fldname", field_name)?;
             fcat.set_int("type", layout.schema.r#type(field_name).unwrap() as i32)?;
             fcat.set_int("length", layout.schema.length(field_name).unwrap())?;
@@ -84,14 +83,8 @@ impl TableManager {
         Ok(())
     }
 
-    pub fn get_layout(
-        &mut self,
-        table_name: impl Into<String>,
-        tx: Arc<Mutex<Transaction>>,
-    ) -> Result<Layout> {
+    pub fn get_layout(&mut self, table_name: &str, tx: Arc<Mutex<Transaction>>) -> Result<Layout> {
         let mut size = -1;
-        let table_name = table_name.into();
-
         let mut tcat = TableScan::new(tx.clone(), "tblcat", self.table_catlog_layout.clone())?;
 
         while tcat.next()? {
@@ -138,8 +131,8 @@ mod tests {
 
     #[test]
     fn should_can_get_layout() -> Result<()> {
-        let test_directory = tempdir()?;
-        let db = TinyDB::new(test_directory.path(), 400, 8)?;
+        let test_directory = tempdir()?.path().join("should_can_get_layout");
+        let db = TinyDB::new(test_directory, 400, 8)?;
         let tx = db.transaction()?;
 
         let mut table_manager = TableManager::new(true, tx.clone())?;

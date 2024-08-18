@@ -112,8 +112,8 @@ mod test {
 
     #[test]
     fn should_can_create_index() -> Result<()> {
-        let test_directory = tempdir()?;
-        let db = TinyDB::new(test_directory.path(), 400, 8)?;
+        let test_directory = tempdir()?.path().join("should_can_create_index");
+        let db = TinyDB::new(test_directory, 400, 8)?;
         let tx = db.transaction()?;
 
         let mut schema = Schema::default();

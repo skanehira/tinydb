@@ -4,8 +4,8 @@ use tinydb::{file::page::Page, log::log_manager::LogManager, server::db::TinyDB}
 
 #[test]
 fn log_test() -> Result<()> {
-    let test_directory = tempdir()?;
-    let db = TinyDB::new(test_directory.path(), 400, 8)?;
+    let test_directory = tempdir()?.path().join("log_test");
+    let db = TinyDB::new(test_directory, 400, 8)?;
     let mut log_manager = db.log_manager.lock().unwrap();
 
     print_log_records(&mut log_manager, "The initial empty log file:", &[])?;

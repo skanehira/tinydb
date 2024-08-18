@@ -4,8 +4,8 @@ use tinydb::{file::block::BlockId, server::db::TinyDB};
 
 #[test]
 fn buffer_test() -> Result<()> {
-    let test_directory = tempdir()?;
-    let db = TinyDB::new(test_directory.path(), 400, 3)?;
+    let test_directory = tempdir()?.path().join("buffer_test");
+    let db = TinyDB::new(test_directory, 400, 3)?;
     let mut buffer_manager = db.buffer_manager.lock().unwrap();
 
     let buf1 = buffer_manager.pin(&BlockId::new("testfile".into(), 1))?;

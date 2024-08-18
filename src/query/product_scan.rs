@@ -9,7 +9,9 @@ pub struct ProductScan {
 
 impl ProductScan {
     pub fn new(scan1: ArcScan, scan2: ArcScan) -> ProductScan {
-        ProductScan { scan1, scan2 }
+        let mut scan = ProductScan { scan1, scan2 };
+        scan.before_first();
+        scan
     }
 }
 
@@ -28,7 +30,7 @@ impl Scan for ProductScan {
             Ok(true)
         } else {
             unlock!(self.scan2).before_first();
-            Ok(unlock!(self.scan1).next()? && unlock!(self.scan1).next()?)
+            Ok(unlock!(self.scan2).next()? && unlock!(self.scan1).next()?)
         }
     }
 
